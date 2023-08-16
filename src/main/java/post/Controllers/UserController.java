@@ -19,20 +19,22 @@ public class UserController {
 
     @PostMapping("/add")
     public ResponseEntity<String> addUser(@Valid @RequestBody User user) {
-
         userRepository.save(user);
-
         return ResponseEntity.ok("User added successfully");
     }
 
-   @GetMapping("/list")
+    @GetMapping("/list")
     public ResponseEntity<?> getUsers() {
-       List<User> users = userRepository.findAll();
-       if (users.isEmpty()) {
-             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("users are not found");
-       } else {
-           return ResponseEntity.ok(users);
-       }
+        try {
+            List<User> users = userRepository.findAll();
+            if (users.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Users are not found");
+            } else {
+                return ResponseEntity.ok(users);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while fetching users: " + e.getMessage());
+        }
+    }
 
-}
 }

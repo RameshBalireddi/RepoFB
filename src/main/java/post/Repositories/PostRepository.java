@@ -55,7 +55,7 @@ package post.Repositories;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import post.DTO.PostResponse;
+
 import post.Entities.Post;
 
 import java.util.List;

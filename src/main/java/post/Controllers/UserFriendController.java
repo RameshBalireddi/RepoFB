@@ -20,11 +20,16 @@ public class UserFriendController {
            @Autowired
            UserFriendRepository userFriendRepository;
 
-    @PostMapping("/sentRequest")
+    @PostMapping("/sentFriendRequest")
     public ResponseEntity<?> sentFriendRequest(@Valid @RequestBody UserFriend userFriend) {
-      ResponseEntity<?>result=   userFriendService.sentFriendRequest(userFriend);
-      if(result!=null)
-          return  ResponseEntity.ok(result.getBody());
+        try {
+            ResponseEntity<?> result = userFriendService.sentFriendRequest(userFriend);
+            if(result!=null)
+                return  ResponseEntity.ok(result.getBody());
+        }catch (Exception e){
+           return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("please enter valid id  "+e.getMessage());
+        }
+
       return  ResponseEntity.status(HttpStatus.NOT_FOUND).body("unable sent the friend request");
 
 
@@ -35,7 +40,7 @@ public class UserFriendController {
         ResponseEntity<?>result=   userFriendService.getPendingRequests(receiverId);
         if(result!=null)
             return ResponseEntity.ok(result.getBody());
-        return  ResponseEntity.status(HttpStatus.NOT_FOUND).body("unable unable to find the pending requests");
+        return  ResponseEntity.status(HttpStatus.NOT_FOUND).body("unable to find the pending requests");
 
     }
     @PutMapping("/friendRequest/{receiverId}/{requestId}")
@@ -47,14 +52,22 @@ public class UserFriendController {
             return  ResponseEntity.ok(result.getBody());
         return  ResponseEntity.status(HttpStatus.NOT_FOUND).body("not identify the that request");
     }
-    @GetMapping("/getFriends/{userId}")
+
+    @GetMapping("/friendsList/{userId}")
     public ResponseEntity<?> getFriends(@PathVariable int userId) {
-        ResponseEntity<List<FriendResponse>> response = (ResponseEntity<List<FriendResponse>>) userFriendService.getFriendsByUserId(userId);
-        if (response.getBody() == null || response.getBody().isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No friends found for the user.");
+        try {
+            ResponseEntity<List<FriendResponse>> response = (ResponseEntity<List<FriendResponse>>) userFriendService.getFriendsByUserId(userId);
+            List<FriendResponse> friendsList = response.getBody();
+
+            if (friendsList == null || friendsList.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No friends found for the user.");
+            }
+            return ResponseEntity.ok(friendsList);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while fetching friends: " + e.getMessage());
         }
-        return ResponseEntity.ok(response.getBody());
     }
+
 
 
 

@@ -27,48 +27,10 @@ public class Like {
     private Post post;
     @NotNull
     @Column(name="liked")
-    private boolean liked;
+    private boolean liked=true;
 
     @Column(name="likedAt")
     private LocalDateTime likedAt;
 
-    public int getId() {
-        return id;
-    }
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public Post getPost() {
-        return post;
-    }
-
-    public void setPost(Post post) {
-        this.post = post;
-    }
-
-    public boolean isLiked() {
-        return liked;
-    }
-
-    public void setLiked(boolean liked) {
-        this.liked = liked;
-    }
-
-    public LocalDateTime getLikedAt() {
-        return likedAt;
-    }
-
-    public void setLikedAt(LocalDateTime likedAt) {
-        this.likedAt = likedAt;
-    }
 }

@@ -19,7 +19,6 @@ public interface UserFriendRepository extends JpaRepository<UserFriend,Integer> 
             "LIMIT 1", nativeQuery = true)
     UserFriend findBySenderIdAndReceiverId(@Param("senderId") int senderId, @Param("receiverId") int receiverId);
 
-
     @Query(value = "SELECT * FROM friendship " +
             "WHERE user_id_receiver = :receiverId AND status = :status", nativeQuery = true)
     List<UserFriend> findPendingRequestsByReceiverAndStatus(@Param("receiverId") int receiverId,
@@ -27,7 +26,6 @@ public interface UserFriendRepository extends JpaRepository<UserFriend,Integer> 
 
     @Query(value = "SELECT * FROM friendship f WHERE user_id_receiver = :receiverId AND user_id_sender = :senderId  AND status = :status", nativeQuery = true)
     UserFriend findByReceiverIdAndRequestIdAndStatus(int receiverId, int senderId,String status);
-
 
     @Query(value = "SELECT * FROM users " +
             "WHERE id IN (" +

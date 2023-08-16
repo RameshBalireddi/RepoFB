@@ -1,18 +1,14 @@
 package post.Enum;
 
+
+
 public enum FriendshipStatus {
-    PENDING("pending"),
-    ACCEPTED("accepted"),
-    REJECTED("rejected");
+    PENDING,
+    ACCEPTED,
+    REJECTED;
 
-    private final String status;
 
-    FriendshipStatus(String status) {
-        this.status = status;
-    }
-
-    public String getStatus() {
-        return status;
-    }
 }
+
+
 

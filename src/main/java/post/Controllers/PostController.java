@@ -1,7 +1,6 @@
 package post.Controllers;
 
 import jakarta.validation.Valid;
-import org.hibernate.annotations.NotFound;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,24 +22,32 @@ public class PostController {
     @Autowired
     PostService postService;
 
-    @PostMapping("/add")
+    @PostMapping("/create")
     public ResponseEntity<String> addPost(@Valid @RequestBody Post post) {
-        post.setCreateAt(LocalDateTime.now());
-        postRepository.save(post);
-        return ResponseEntity.ok("post added successfully");
+        try {
+            post.setCreateAt(LocalDateTime.now());
+            postRepository.save(post);
+            return ResponseEntity.ok("Post added successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("An error occurred while adding the post: " + e.getMessage());
+        }
     }
+
 
     @GetMapping("/list/{userId}")
     public ResponseEntity<?> getAllPosts(@PathVariable int userId) {
-        ResponseEntity<?> responseEntity = postService.getAllPosts(userId);
-
-        if (responseEntity.getStatusCode() == HttpStatus.NOT_FOUND) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Posts not found");
+        try {
+            ResponseEntity<?> responseEntity = postService.getAllPosts(userId);
+            if (responseEntity.getStatusCode() == HttpStatus.NOT_FOUND) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Posts not found");
+            }
+            List<PostResponse> postResponse = (List<PostResponse>) responseEntity.getBody();
+            return ResponseEntity.ok(postResponse);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while retrieving posts: " + e.getMessage());
         }
-
-        List<PostResponse> postResponse = (List<PostResponse>) responseEntity.getBody();
-        return ResponseEntity.ok(postResponse);
     }
+
 
 }
 

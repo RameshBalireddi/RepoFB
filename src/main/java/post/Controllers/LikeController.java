@@ -2,13 +2,11 @@ package post.Controllers;
 
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import post.Entities.Like;
-import post.Repositories.LikeRepository;
 import post.Service.LikeService;
-
-import java.time.LocalDate;
 
 @RestController
 public class LikeController {
@@ -17,13 +15,15 @@ public class LikeController {
     LikeService likeService;
 
 
-    @PostMapping("/like")
-    public ResponseEntity<String> likePost( @RequestBody @Valid Like like){
-
-       return (ResponseEntity<String>) likeService.likeAPost(like);
-
-
-
-      }
+  @PostMapping("/like")
+  public ResponseEntity<String> likePost(@RequestBody @Valid Like like) {
+    try {
+      ResponseEntity<String> response = (ResponseEntity<String>) likeService.likeAPost(like);
+      return ResponseEntity.ok(response.getBody());
+    } catch (Exception e) {
+      return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Error liking the post: " + e.getMessage());
     }
+  }
+
+}
 
