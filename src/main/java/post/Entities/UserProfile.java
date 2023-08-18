@@ -2,6 +2,7 @@ package post.Entities;
 
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,7 +13,7 @@ import org.antlr.v4.runtime.misc.NotNull;
 @AllArgsConstructor
 @Entity
 @Table(name="users")
-public class User {
+public class UserProfile {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,9 +23,19 @@ public class User {
     @NotNull
     private  String name;
 
-    @NotNull
-    @Column(name="email",unique = true)
+    @Email
+    @Column(unique = true)
     private String email;
+
+    @NotNull
+    private String password;
+
+    private  String profilePicPath;
+
+    private String profileURL;
+
+    private boolean active=true;
+
 
 
 }

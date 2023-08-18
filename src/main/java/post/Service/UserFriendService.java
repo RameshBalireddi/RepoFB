@@ -4,19 +4,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import post.APIResponse.APIResponse;
 import post.DTO.FriendRequestDTO;
-import post.DTO.FriendResponse;
-import post.Entities.User;
+import post.Responses.FriendResponse;
 import post.Entities.UserFriend;
+import post.Entities.UserProfile;
 import post.Enum.FriendshipStatus;
 import post.Repositories.UserFriendRepository;
-import post.Repositories.UserRepository;
+import post.Repositories.UserProfileRepository;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class UserFriendService {
@@ -24,56 +25,62 @@ public class UserFriendService {
     @Autowired
     private UserFriendRepository userFriendRepository;
     @Autowired
-    private UserRepository userRepository;
+    private UserProfileRepository userProfileRepository;
     @Autowired
     private UserFriendService userFriendService;
-    public ResponseEntity<?> sentFriendRequest(UserFriend userFriend) {
-        int senderId = userFriend.getSender().getId();
-        int receiverId = userFriend.getReceiver().getId();
+    public ResponseEntity<APIResponse> sentFriendRequest(int senderId,int requestId) {
 
-        if (senderId == receiverId) {
-            return ResponseEntity.badRequest().body("Sender and receiver cannot be the same.");
+        if (senderId == requestId) {
+            return APIResponse.error("Sender and receiver cannot be the same.");
         }
-        UserFriend existingFriendship = userFriendRepository.findBySenderIdAndReceiverId(senderId, receiverId);
-              if (existingFriendship == null) {
-            userFriend.setStatus(FriendshipStatus.PENDING); // Use enum value directly
-            userFriend.setRequest_date(LocalDateTime.now());
-            userFriendRepository.save(userFriend);
-            return ResponseEntity.ok("Friend request sent successfully.");
+        UserProfile senderProfile = userProfileRepository.findById(senderId).orElse(null);
+        UserProfile receiverProfile = userProfileRepository.findById(requestId).orElse(null);
+        if (senderProfile == null || receiverProfile == null) {
+            return APIResponse.error("Invalid sender or receiver ID.");
         }
-        FriendshipStatus friendStatus = existingFriendship.getStatus(); // Use the enum type
-        if (friendStatus == FriendshipStatus.ACCEPTED) {
-            return ResponseEntity.ok("You both are already friends.");
-        } else if (friendStatus == FriendshipStatus.REJECTED) {
-            userFriend.setStatus(FriendshipStatus.PENDING); // Use enum value directly
+        UserFriend existingFriendship = userFriendRepository.findBySenderIdAndReceiverId(senderId, requestId);
+
+        if (existingFriendship == null) {
+            UserFriend userFriend = new UserFriend();
+            userFriend.setSender(senderProfile);
+            userFriend.setReceiver(receiverProfile);
             userFriend.setRequest_date(LocalDateTime.now());
+            userFriend.setStatus(FriendshipStatus.PENDING);
             userFriendRepository.save(userFriend);
-            return ResponseEntity.ok("Your friend request was sent again successfully");
-        } else if (friendStatus == FriendshipStatus.PENDING) {
-            return ResponseEntity.ok("Friend request was already sent.");
+            return APIResponse.success("Friend request sent successfully.", requestId);
         }
 
-        return ResponseEntity.badRequest().body("Something error occurred.");
+        if (existingFriendship.getStatus() == FriendshipStatus.ACCEPTED) {
+            return APIResponse.error("You both are already friends.");
+        } else if (existingFriendship.getStatus() == FriendshipStatus.REJECTED) {
+            existingFriendship.setStatus(FriendshipStatus.PENDING);
+            existingFriendship.setRequest_date(LocalDateTime.now());
+            userFriendRepository.save(existingFriendship);
+            return APIResponse.error("Your friend request was sent again successfully");
+        }
+        return APIResponse.error("Friend request was already sent.");
     }
 
-    public ResponseEntity<?> getPendingRequests(int receiverId) {
+
+    public ResponseEntity<APIResponse> getPendingRequests(int receiverId) {
         String pending ="PENDING";
         List<UserFriend> pendingRequests = userFriendRepository.findPendingRequestsByReceiverAndStatus(
                 receiverId, pending);
         List<FriendRequestDTO> friendRequestsList=  new LinkedList<>();
         if (pendingRequests.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND.value()).body("You don't have any pending friend requests.");
+            return APIResponse.error("You don't have any pending friend requests.");
         }
         for( UserFriend friend:pendingRequests){
-            Optional<User> sender=userRepository.findById(friend.getSender().getId());
+            Optional<UserProfile> sender=userProfileRepository.findById(friend.getSender().getId());
             FriendRequestDTO friendRequestDTO=new FriendRequestDTO();
             friendRequestDTO.setSenderId( friend.getSender().getId());
             friendRequestDTO.setStatus(String.valueOf(friend.getStatus()));
             friendRequestDTO.setSenderName(sender.get().getName());
             friendRequestsList.add(friendRequestDTO);
         }
-        return ResponseEntity.ok(friendRequestsList);
+        return APIResponse.success("friendRequest list",friendRequestsList);
     }
+
     public ResponseEntity<?> handleFriendRequest(int receiverId, int requestId, String requestAction) {
         if (receiverId == requestId) {
             return ResponseEntity.badRequest().body("Receiver and sender cannot be the same.");
@@ -102,20 +109,26 @@ public class UserFriendService {
     }
 
 
-    public ResponseEntity<List<FriendResponse>> getFriendsByUserId(int userId) {
-        List<Object[]> objectUsers = userFriendRepository.findFriendsById(userId);
-        List<FriendResponse> userList = new ArrayList<>();
-        for (Object[] user : objectUsers) {
-            int id = (int) user[0];
-            String name = (String) user[1];
-            String email = (String) user[2];
+    public ResponseEntity<APIResponse> getFriendsByUserId(int userId) {
+        List<Integer> friendsIds = userFriendRepository.findFriendIds(userId);
+        if(friendsIds.isEmpty())
+        return  APIResponse.error("this user have no friends");
+        List<UserProfile> userProfiles=    userProfileRepository.findAllById(friendsIds);
+       if (userProfiles.isEmpty()){
+           return  APIResponse.error("user profiles are empty ");
+       }
+        List<FriendResponse> friendResponses = userProfiles.stream()
+                .map(userProfile -> new FriendResponse(
+                        userProfile.getId(),
+                        userProfile.getName(),
+                        userProfile.getEmail(),
+                        userProfile.getProfilePicPath()
+                ))
+                .collect(Collectors.toList());
 
-            FriendResponse userFriend = new FriendResponse(id, name, email);
-            userList.add(userFriend);
-        }
-        return ResponseEntity.ok(userList);
+        return  APIResponse.success("friends ",friendResponses);
+
     }
-
 
 
 }

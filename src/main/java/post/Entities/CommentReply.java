@@ -12,10 +12,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name="replies")
-public class Reply {
+public class CommentReply {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+
     @NotNull
     @ManyToOne
     @JoinColumn(name = "commentId",referencedColumnName = "id")
@@ -23,7 +24,7 @@ public class Reply {
 
     @ManyToOne
     @JoinColumn(name = "replyId")
-    private User user;
+    private UserProfile user;
 
     @NotNull
     private String reply;

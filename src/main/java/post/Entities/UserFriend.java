@@ -1,9 +1,7 @@
 package post.Entities;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Past;
-import jakarta.validation.constraints.Pattern;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -24,11 +22,11 @@ public class UserFriend {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id_sender")
-    private User sender;
+    private UserProfile sender;
 
     @ManyToOne
     @JoinColumn(name = "user_id_receiver")
-    private User receiver;
+    private UserProfile receiver;
     @Enumerated(EnumType.STRING)
     private FriendshipStatus status;
 

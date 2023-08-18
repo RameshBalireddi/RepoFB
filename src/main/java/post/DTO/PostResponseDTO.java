@@ -5,18 +5,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class CommentResponse {
-
-    private int commentId;
-
-    private int userId;
-
+@NoArgsConstructor
+public class PostResponseDTO {
     private int postId;
-
-    private String comment;
-
+    private String post;
+    private int userId;
+    private long likes;
+    private long comments;
 
 
 }
