@@ -95,11 +95,11 @@ public class FileController{
     }
 
     @GetMapping("/pictureInCloud")
-    public String redirectToProfilePicture() {
+    public APIResponse redirectToProfilePicture() {
         int userId = UserIdContextHolder.getUserId();
         String profilePictureURL = String.valueOf(fileService.getPictureInCloud(userId));
         // Return the URL for redirection
-        return "redirect:" + profilePictureURL;
+        return APIResponse.success("profile url:", profilePictureURL).getBody();
     }
 
 

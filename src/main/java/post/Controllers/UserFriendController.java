@@ -1,19 +1,12 @@
 package post.Controllers;
 
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.convert.ConverterNotFoundException;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import post.APIResponse.APIResponse;
-import post.Responses.FriendResponse;
-import post.DTO.UserFriendDTO;
 import post.Repositories.UserFriendRepository;
 import post.Security.UserIdContextHolder;
 import post.Service.UserFriendService;
-
-import java.util.List;
 
 @RestController
 public class UserFriendController {
@@ -37,22 +30,18 @@ public class UserFriendController {
 
     }
     @PutMapping("/friendRequest/{requestId}")
-    public ResponseEntity<?> handleFriendRequest(
+    public ResponseEntity<APIResponse> handleFriendRequest(
                                                  @PathVariable int requestId,
                                                  @RequestParam(required = false,defaultValue = "accept") String action) {
         int receiverId=UserIdContextHolder.getUserId();
-        ResponseEntity<?>result= userFriendService.handleFriendRequest(receiverId, requestId, action);
-        if(result!=null)
-            return  ResponseEntity.ok(result.getBody());
-        return  ResponseEntity.status(HttpStatus.NOT_FOUND).body("not identify the that request");
+        return userFriendService.handleFriendRequest(receiverId, requestId, action);
+
     }
 
     @GetMapping("/friendsList")
-    public ResponseEntity<APIResponse> getFriends() {
+    public APIResponse getFriends() {
          int userId= UserIdContextHolder.getUserId();
-            ResponseEntity<APIResponse> response = userFriendService.getFriendsByUserId(userId);
-
-            return  ResponseEntity.ok(APIResponse.success("friends :",response).getBody());
+            return  userFriendService.getFriendsByUserId(userId);
     }
 
 

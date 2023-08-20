@@ -1,5 +1,6 @@
 package post.Entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -18,10 +19,12 @@ public class Comment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "userId")
     private UserProfile user;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "postId",referencedColumnName = "id")
     private Post post;
 
@@ -30,7 +33,6 @@ public class Comment {
 
     @Column(name="commentedAt")
     private LocalDateTime commentedAt;
-
 
 
 }

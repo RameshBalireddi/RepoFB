@@ -4,9 +4,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import post.APIResponse.APIResponse;
 import post.DTO.CommentReplyDTO;
@@ -28,7 +26,16 @@ public class CommentReplyController {
 
     }
 
+    @GetMapping("/replies")
+    public  APIResponse getAllCommentReplies(@RequestParam(required = false,defaultValue = "0") int commentId){
+              return  replyService.getALlCommentReplies(commentId);
+    }
+
+   @DeleteMapping("/{replyId}")
+        public APIResponse deleteReplyById( @PathVariable int replyId){
+             return  replyService.deleteReplyById(replyId);
+       }
+   }
 
 
 
-}

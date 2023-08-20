@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class CommentService {
@@ -37,34 +38,20 @@ public class CommentService {
         int postId = commentDTO.getPostId();
         int userId = UserIdContextHolder.getUserId();
 
-        Optional<Post> optionalSharePost = postRepository.findById(postId);
-        Optional<UserProfile> userProfile = userProfileRepository.findById(userId);
+        Optional<Post> optionalPost = postRepository.findById(postId);
+        Optional<UserProfile> optionalUser = userProfileRepository.findById(userId);
 
-        if (!optionalSharePost.isPresent()) {
-            return APIResponse.error("Post not found.");
+        if (!optionalPost.isPresent() || !optionalUser.isPresent()) {
+            return APIResponse.error("Post or user not found.");
         }
 
-        if (!userProfile.isPresent()) {
-            return APIResponse.error("User not found.");
-        }
-
-        Post post = optionalSharePost.get();
-        UserProfile user = userProfile.get();
+        Post post = optionalPost.get();
+        UserProfile user = optionalUser.get();
         int postOwnerId = post.getUser().getId();
 
-        if (userId == postOwnerId) {
-            Comment comment = new Comment();
-            comment.setUser(user);
-            comment.setPost(post);
-            comment.setComment(commentDTO.getComment());
-            comment.setCommentedAt(LocalDateTime.now());
-            Comment savedComment = commentRepository.save(comment);
-            return APIResponse.success("You commented on your own post.", commentDTO);
-        } else {
-            Optional<UserFriend> friend = Optional.ofNullable(userFriendRepository.findBySenderIdAndReceiverId(postOwnerId, userId));
-            if (friend.isEmpty() || friend.get().getStatus() != FriendshipStatus.ACCEPTED) {
-                return APIResponse.error("You can't comment on this post.");
-            }
+        Optional<UserFriend> friend = Optional.ofNullable(userFriendRepository.findBySenderIdAndReceiverId(postOwnerId, userId));
+        if (userId != postOwnerId && (friend.isEmpty() || friend.get().getStatus() != FriendshipStatus.ACCEPTED)) {
+            return APIResponse.error("You can't comment on this post.");
         }
 
         Comment comment = new Comment();
@@ -73,27 +60,32 @@ public class CommentService {
         comment.setComment(commentDTO.getComment());
         comment.setCommentedAt(LocalDateTime.now());
         Comment savedComment = commentRepository.save(comment);
-        return APIResponse.success("Comment added successfully.", savedComment);
+
+        String successMessage = (userId == postOwnerId) ? "You commented on your own post." : "Comment added successfully.";
+        return APIResponse.success(successMessage, savedComment);
     }
+
 
     public ResponseEntity<APIResponse> getCommentsByPostId(int postId) {
+        List<Comment> commentList = (postId == 0)
+                ? commentRepository.findAll()
+                : commentRepository.findByPostId(postId);
 
-      List<Comment> commentList=  commentRepository.findByPostId(postId);
-      List<CommentResponse> commentsList=new ArrayList<>();
+        if (commentList.isEmpty()) {
+            return APIResponse.error((postId == 0) ? "No comments found." : "This post has no comments.");
+        }
+        List<CommentResponse> commentsList = commentList.stream()
+                .map(comment -> new CommentResponse(
+                        comment.getId(),
+                        comment.getUser().getId(),
+                        comment.getPost().getId(),
+                        comment.getComment()))
+                .collect(Collectors.toList());
 
-          for(Comment comment:commentList){
-              CommentResponse commentResponse=new CommentResponse();
-              commentResponse.setCommentId(comment.getId());
-              commentResponse.setUserId(comment.getUser().getId());
-              commentResponse.setPostId(comment.getPost().getId());
-              commentResponse.setComment(comment.getComment());
-              commentsList.add(commentResponse);
-          }
-      if(commentList.isEmpty()  || commentList==null){
-          return  APIResponse.error("this post have no comments");
-      }
-       return APIResponse.success("comments are :",commentsList);
+        return APIResponse.success("comments:", commentsList);
     }
+
+
     public ResponseEntity<APIResponse> deleteCommentById(int commentId, int userId) {
         Optional<Comment> optionalComment = commentRepository.findById(commentId);
         if (optionalComment.isEmpty()) {
@@ -106,8 +98,22 @@ public class CommentService {
             return APIResponse.error("You are not eligible to delete this comment.");
         }
         commentRepository.deleteById(commentId);
-        return APIResponse.success("Comment deleted successfully", comment);
+        return APIResponse.success("Comment deleted successfully", commentId);
     }
 
 
+    public APIResponse updateCommentById(int commentId, int userId,String commentText) {
+      Optional<Comment> comment=  commentRepository.findById(commentId);
+
+      if(comment.isEmpty()){
+          return APIResponse.error("comment not found").getBody();
+      }
+      Comment comment1=   comment.get();
+      if(comment1.getUser().getId()!=userId) {
+          return APIResponse.error("this user cant authorise to delete this comment").getBody();
+      }
+        comment1.setComment(commentText);
+        commentRepository.save(comment1);
+       return APIResponse.success("comment updated successfully ",commentText).getBody();
+    }
 }

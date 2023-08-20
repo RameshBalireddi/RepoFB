@@ -7,7 +7,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import post.APIResponse.APIResponse;
 import post.DTO.UserDTO;
-import post.Entities.UserProfile;
 import post.Repositories.UserProfileRepository;
 import post.Security.UserIdContextHolder;
 import post.Service.UserProfileService;

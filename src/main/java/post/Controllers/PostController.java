@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import post.APIResponse.APIResponse;
-import post.DTO.PostDTO;
 import post.Security.UserIdContextHolder;
 import post.Service.PostService;
 
@@ -18,7 +17,8 @@ public class PostController{
     PostService postService;
 
     @PostMapping("/add")
-    public ResponseEntity<APIResponse> addPost(@Valid @RequestBody String postText) {
+    public ResponseEntity<APIResponse> addPost( @RequestBody String postText) {
+        if(postText==null) return  APIResponse.error("please add post text");
         int userId=UserIdContextHolder.getUserId();
        return   postService.addPost(postText,userId);
     }

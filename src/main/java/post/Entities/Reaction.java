@@ -1,6 +1,7 @@
 package post.Entities;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,11 +20,14 @@ public class Reaction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnore
     @JoinColumn(name="userId")
     private UserProfile user;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "postId",referencedColumnName = "id")
     private Post post;
 

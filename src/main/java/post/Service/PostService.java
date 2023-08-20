@@ -1,11 +1,9 @@
 package post.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import post.APIResponse.APIResponse;
-import post.DTO.PostDTO;
 import post.Entities.Post;
 import post.Entities.UserFriend;
 import post.Entities.UserProfile;
@@ -100,7 +98,7 @@ public class PostService {
         int postUserId=post.get().getId();
       UserFriend userFriend=  userFriendRepository.findByReceiverIdAndRequestIdAndStatus(postUserId,userId, String.valueOf(FriendshipStatus.ACCEPTED));
        if(userFriend==null)
-         return APIResponse.error("user cant delete this post").getBody();
+         return APIResponse.error("you are not authorise to delete this post").getBody();
          Post post1= post.get();
          post1.setFlag(false);
          postRepository.save(post1);

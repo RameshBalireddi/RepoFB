@@ -12,8 +12,6 @@ public class UserIdContextHolder {
         return userIdHolder.get();
     }
 
-    public static void clearUserId() {
-        userIdHolder.remove();
-    }
+
 }
 

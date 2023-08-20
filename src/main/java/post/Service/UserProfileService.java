@@ -26,7 +26,6 @@ public class UserProfileService {
 
     public ResponseEntity<APIResponse> addUser(UserDTO userDTO) {
         try {
-
             UserProfile userProfile = new UserProfile();
             userProfile.setName(userDTO.getName());
             userProfile.setEmail(userDTO.getEmail());
@@ -51,7 +50,8 @@ public class UserProfileService {
             int id=user.getId();
             String name=user.getName();
             String email= user.getEmail();;
-            UserResponse userResponse=new UserResponse(id,name,email);
+            String profilePicPath=user.getProfilePicPath();
+            UserResponse userResponse=new UserResponse(id,name,email,profilePicPath);
          userResponses.add(userResponse);
         }
 
@@ -59,7 +59,10 @@ public class UserProfileService {
     }
 
     public APIResponse deleteUserById(int userId) {
-        Optional<UserProfile> userOptional = userProfileRepository.findById(userId);
+        Optional<UserProfile> userOptional = Optional.ofNullable(userProfileRepository.findByIdAndActive(userId, true));
+      if( userOptional.isEmpty()){
+          return APIResponse.error("user not found").getBody();
+      }
 
         if (userOptional.isPresent()) {
             UserProfile user = userOptional.get();
@@ -72,21 +75,20 @@ public class UserProfileService {
     }
 
 
-        public APIResponse updateStatusById(int userId) {
+    public APIResponse updateStatusById(int userId) {
         Optional<UserProfile> user=  userProfileRepository.findById(userId);
         if (user.isEmpty()){
             return APIResponse.error("user not found").getBody();
         }
         UserProfile user1=user.get();
-     if( user1.isActive()==true){
+        if( user1.isActive()==true){
          user1.setActive(false);
          userProfileRepository.save(user1);
          return APIResponse.success("user status changed to inactive successfully ",user1.getName()).getBody();
-     }
-     else
+        }
          user1.setActive(true);
          userProfileRepository.save(user1);
-         return APIResponse.success("user status changed to active successfully ",user1).getBody();
+         return APIResponse.success("user status changed to active successfully ",user1.getName()).getBody();
     }
 
 

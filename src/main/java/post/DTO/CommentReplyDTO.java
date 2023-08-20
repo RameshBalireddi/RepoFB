@@ -6,8 +6,8 @@ import lombok.Data;
 @Data
 public class CommentReplyDTO {
    @NotNull
-      private  int commentId;
-  @NotNull
+   private  int commentId;
+   @NotNull
     private String commentReply;
 
 }

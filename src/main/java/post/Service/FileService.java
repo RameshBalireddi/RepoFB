@@ -85,14 +85,14 @@ public class FileService {
         return APIResponse.uploadSuccess("File uploaded successfully.").getBody();
     }
 
-    public String getPictureInCloud(int userId) {
+    public APIResponse getPictureInCloud(int userId) {
 
         Optional<UserProfile> userProfile=userProfileRepository.findById(userId);
         if(userProfile.isEmpty()){
-            return "not Found";
+            return APIResponse.error(" user not Found").getBody();
             }
        String  url=   userProfile.get().getProfileURL();
-        return url;
+        return APIResponse.success("url :",url).getBody();
 
     }
 

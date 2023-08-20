@@ -42,9 +42,9 @@ public class SecurityConfig {
         http.csrf().disable()
 
                 .authorizeRequests()
-//                .anyRequest().authenticated()
-                .requestMatchers("/post/**","comment/**","user/**","/sentFriendRequest/**").authenticated()
-//                .anyRequest().permitAll()
+                .anyRequest().authenticated()
+//                .requestMatchers("/post/**","comment/**","user/**","/sentFriendRequest/**").authenticated()
+////                .anyRequest().permitAll()
                 .and()
                 .addFilterBefore(customUserIdFilter(), UsernamePasswordAuthenticationFilter.class)
                 .httpBasic();

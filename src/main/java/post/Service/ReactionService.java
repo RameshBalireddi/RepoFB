@@ -15,8 +15,10 @@ import post.Repositories.ReactionRepository;
 import post.Repositories.PostRepository;
 import post.Repositories.UserFriendRepository;
 import post.Repositories.UserProfileRepository;
+import post.Security.UserIdContextHolder;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -31,61 +33,73 @@ public class ReactionService {
     @Autowired
     UserProfileRepository userProfileRepository;
 
-    public ResponseEntity<APIResponse> reactPost(int reactUserId,int postId,boolean reactionStatus) {
+    public ResponseEntity<APIResponse> reactPost(int reactUserId, int postId, boolean reactionStatus) {
+        UserProfile userProfile = userProfileRepository.findById(reactUserId).orElse(null);
+        if(userProfile.isActive()==false || userProfile==null)
+            return  APIResponse.error("user not found");
+        Reaction existingLike = reactionRepository.findByUserIdAndPostId(reactUserId, postId);
 
-
-        int likeUserId = reactUserId;
-
-        Reaction existingLike = reactionRepository.findByUserIdAndPostId(likeUserId, postId);
         if (existingLike != null && existingLike.isLiked()) {
-            return APIResponse.error("you already reacted this post");
+            return APIResponse.error("You already reacted to this post.");
         }
-        UserProfile userProfile = userProfileRepository.findById(likeUserId).orElse(null);
         Post post = postRepository.findById(postId).orElse(null);
-        if (post == null  || userProfile==null) {
-            return APIResponse.error("Post not found. and user not found");
+        if (post == null ) {
+            return APIResponse.error("Post not found.");
         }
         int postUserId = post.getUser().getId();
-
-        if (postUserId != likeUserId) {
-            UserFriend friendStatus = userFriendRepository.findBySenderIdAndReceiverId(postUserId, likeUserId);
-            if (friendStatus == null || friendStatus.getStatus()!= FriendshipStatus.ACCEPTED) {
+        if (postUserId != reactUserId) {
+            UserFriend friendStatus = userFriendRepository.findBySenderIdAndReceiverId(postUserId, reactUserId);
+            if (friendStatus == null || friendStatus.getStatus() != FriendshipStatus.ACCEPTED) {
                 return APIResponse.error("You both are not friends, so you can't like this post.");
             }
         }
-        UserProfile senderProfile = userProfileRepository.findById(likeUserId).orElse(null);
 
-        Reaction reaction=new Reaction();
+        Reaction reaction = new Reaction();
         reaction.setUser(userProfile);
         reaction.setPost(post);
         reaction.setLiked(reactionStatus);
         reaction.setLikedAt(LocalDateTime.now());
         reactionRepository.save(reaction);
 
-        if (postUserId == likeUserId) {
-            APIResponse.success("you liked your own post",reaction);
-        }
-            return APIResponse.success("Post liked successfully.",reaction);
-        }
+        String successMessage = (postUserId == reactUserId) ? "You liked your own post." : "Post liked successfully.";
+        return APIResponse.success(successMessage, reaction);
+    }
+
 
     public APIResponse changeReactionForPost(int postId,int userId) {
         Optional<Reaction> reaction = Optional.ofNullable(reactionRepository.findByUserIdAndPostId(postId, userId));
 
-        if (reaction.isPresent()) {
+        if(reaction.isEmpty()){
+            return APIResponse.error("you are not react this post").getBody();
+        }
             Reaction reaction1 = reaction.get();
             Boolean status=reaction1.isLiked();
             if(status){
             reaction1.setLiked(false);
             reactionRepository.save(reaction1);
             return APIResponse.success("post unliked successfully", reaction1.getPost()).getBody();
-        } else
+             } else
             reaction1.setLiked(true);
             reactionRepository.save(reaction1);
             return APIResponse.success("post like successfully", reaction1.getPost()).getBody();
-        }
-        return APIResponse.error("post are not found").getBody();
-    }
+            }
 
+    public APIResponse getAllReactions() {
+
+        List<Reaction> reactions= reactionRepository.findAll();
+        if(reactions.isEmpty()){
+            return APIResponse.error("reactions not found").getBody();
+        }
+        return APIResponse.success("reactions",reactions).getBody();
+    }
+    public APIResponse getAllReactionsById() {
+
+     Optional<Reaction> reactions= reactionRepository.findAllById(UserIdContextHolder.getUserId());
+     if(reactions.isEmpty()){
+         return APIResponse.error("reactions not found from given user").getBody();
+     }
+     return APIResponse.success("reactions",reactions).getBody();
+    }
 }
 
 

@@ -12,25 +12,34 @@ import post.Security.UserIdContextHolder;
 import post.Service.CommentService;
 
 @RestController
+@RequestMapping("comment")
 public class CommentController {
     @Autowired
     CommentService commentService;
 
-    @PostMapping("/comment")
+    @PostMapping("add")
     public ResponseEntity<APIResponse> writeACommentForPost(@RequestBody @Valid CommentDTO commentDTO) {
         ResponseEntity<APIResponse> responseEntity = commentService.writeACommentForPost(commentDTO);
         return ResponseEntity.status(responseEntity.getStatusCode()).body(responseEntity.getBody());
     }
-    @GetMapping("comments/{postId}")
-    public ResponseEntity<APIResponse> getComments( @PathVariable int postId){
-     return commentService.getCommentsByPostId(postId);
+    @GetMapping("list")
+    public ResponseEntity<APIResponse> getComments( @RequestParam(required = false,defaultValue = "0") int postId){
+                     return commentService.getCommentsByPostId(postId);
     }
-    @DeleteMapping("comment/{commentId}")
-    public ResponseEntity<APIResponse> deleteComment(@PathVariable int commentId) {
 
+
+    @DeleteMapping("/{commentId}")
+    public ResponseEntity<APIResponse> deleteComment(@PathVariable int commentId) {
         int userId= UserIdContextHolder.getUserId();
         return commentService.deleteCommentById(commentId, userId);
     }
+
+    @PutMapping("update/{commentId}")
+    public APIResponse updateComment(@PathVariable int commentId,@RequestBody String commentText){
+        int userId=UserIdContextHolder.getUserId();
+       return commentService.updateCommentById(commentId,userId,commentText);
+    }
+
 
 
 
