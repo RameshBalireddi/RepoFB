@@ -21,7 +21,7 @@ public class Reaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JsonIgnore
     @JoinColumn(name="userId")
     private UserProfile user;

@@ -27,6 +27,7 @@ public class UserFriend {
     @ManyToOne
     @JoinColumn(name = "user_id_receiver")
     private UserProfile receiver;
+
     @Enumerated(EnumType.STRING)
     private FriendshipStatus status;
 

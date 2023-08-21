@@ -17,4 +17,5 @@ public class FriendRequestDTO {
 
     private String senderName;
 
+
 }

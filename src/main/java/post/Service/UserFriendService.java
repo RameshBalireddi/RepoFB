@@ -61,52 +61,56 @@ public class UserFriendService {
     }
 
 
-    public ResponseEntity<APIResponse> getPendingRequests(int receiverId) {
-        String pending ="PENDING";
-        List<UserFriend> pendingRequests = userFriendRepository.findPendingRequestsByReceiverAndStatus(
-                receiverId, pending);
-        List<FriendRequestDTO> friendRequestsList=  new LinkedList<>();
-        if (pendingRequests.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("you have any pending requests")).getBody();
-        }
-        for( UserFriend friend:pendingRequests){
-            Optional<UserProfile> sender=userProfileRepository.findById(friend.getSender().getId());
+    public ResponseEntity<APIResponse> getPendingRequests(int receiverId, boolean all) {
+        String pending = "PENDING";
 
-            FriendRequestDTO friendRequestDTO=new FriendRequestDTO();
-            friendRequestDTO.setSenderId( friend.getSender().getId());
-            friendRequestDTO.setStatus(String.valueOf(friend.getStatus()));
-            friendRequestDTO.setSenderName(sender.get().getName());
-            friendRequestsList.add(friendRequestDTO);
+        List<UserFriend> pendingRequests;
+        String errorMessage;
+        if (all) {
+            pendingRequests = userFriendRepository.findByStatus(pending);
+            errorMessage = "pending requests are not found";
+        } else {
+            pendingRequests = userFriendRepository.findPendingRequestsByReceiverAndStatus(receiverId, pending);
+            errorMessage = "you don't have any pending requests";
         }
-        return APIResponse.success("friendRequest list",friendRequestsList);
+        if (pendingRequests.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error(errorMessage).getBody());
+        }
+        List<FriendRequestDTO> pendingRequestList = pendingRequests.stream()
+                .map(p -> new FriendRequestDTO(
+                        p.getSender().getId(),
+                        String.valueOf(p.getStatus()),
+                        p.getSender().getName()))
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(APIResponse.success("pending requests", pendingRequestList).getBody());
     }
+
 
     public ResponseEntity<APIResponse> handleFriendRequest(int receiverId, int requestId, String requestAction) {
         if (receiverId == requestId) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(APIResponse.error("sender and receiver cant be the same")).getBody();
+            return ResponseEntity.badRequest().body(APIResponse.error("Sender and receiver can't be the same").getBody());
         }
-        UserFriend requestStatus = userFriendRepository.findBySenderIdAndReceiverId(requestId, receiverId);
-        if (requestStatus.getStatus()==FriendshipStatus.ACCEPTED) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(APIResponse.error("you both are already friends")).getBody();
-        }
+
         UserFriend userFriend = userFriendRepository.findByReceiverIdAndRequestIdAndStatus(receiverId, requestId, String.valueOf(FriendshipStatus.PENDING));
         if (userFriend == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(APIResponse.error("You haven't received any request from the given user")).getBody();
+            return ResponseEntity.badRequest().body(APIResponse.error("You haven't received any request from the given user").getBody());
         }
-           if (requestAction.equalsIgnoreCase("accept")) {
-            userFriend.setStatus(FriendshipStatus.ACCEPTED);
-            userFriend.setAcceptance_date(LocalDateTime.now());
-            userFriendRepository.save(userFriend);
-            return APIResponse.success("Friend request accepted successfully.",requestId);
+        switch (requestAction.toLowerCase()) {
+            case "accept":
+                userFriend.setStatus(FriendshipStatus.ACCEPTED);
+                userFriend.setAcceptance_date(LocalDateTime.now());
+                break;
+            case "reject":
+                userFriend.setStatus(FriendshipStatus.REJECTED);
+                break;
+            default:
+                return ResponseEntity.badRequest().body(APIResponse.error("Invalid request action").getBody());
         }
-        if (requestAction.equalsIgnoreCase("reject")) {
-            userFriend.setStatus(FriendshipStatus.REJECTED);
-            userFriendRepository.save(userFriend);
-            return APIResponse.success("Friend request rejected successfully.",requestId);
-        }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(APIResponse.error("You haven't received any request from the given user")).getBody();
-
+        userFriendRepository.save(userFriend);
+        return APIResponse.success("Friend request " + requestAction.toLowerCase() + "ed successfully.", requestId);
     }
+
 
     public ResponseEntity<APIResponse> getFriendsByUserId(int userId) {
         List<Integer> friendsIds = userFriendRepository.findFriendIds(userId);

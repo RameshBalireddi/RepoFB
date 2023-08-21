@@ -1,15 +1,12 @@
 package post.Entities;
 
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.antlr.v4.runtime.misc.NotNull;
-
-import java.util.List;
 
 @Data
 @NoArgsConstructor

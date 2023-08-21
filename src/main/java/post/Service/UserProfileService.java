@@ -19,6 +19,7 @@ import post.Responses.UserWithPostCountResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class UserProfileService {
@@ -51,17 +52,12 @@ public class UserProfileService {
         if (users.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("users not found").getBody());
         }
-        List<UserResponse> userResponses = new ArrayList<>();
-        for (UserProfile user : users) {
-            int id = user.getId();
-            String name = user.getName();
-            String email = user.getEmail();
-            String profilePicCloudUrl= user.getProfileURL();
-            String profilePicPath = user.getProfilePicPath();
-            UserResponse userResponse = new UserResponse(id, name, email, profilePicPath,profilePicCloudUrl);
-            userResponses.add(userResponse);
-        }
-
+        List<UserResponse> userResponses=users.stream()
+                .map(u->new UserResponse(u.getId(),
+                        u.getName(),
+                        u.getEmail(),
+                        u.getProfilePicPath(),
+                        u.getProfileURL())).collect(Collectors.toList());
         return APIResponse.success("users are : ", userResponses);
     }
 
@@ -81,7 +77,6 @@ public class UserProfileService {
         }
     }
 
-
     public ResponseEntity<APIResponse> updateStatusById(int userId) {
         Optional<UserProfile> user = userProfileRepository.findById(userId);
         if (user.isEmpty()) {
@@ -97,7 +92,6 @@ public class UserProfileService {
         userProfileRepository.save(user1);
         return APIResponse.success("user status changed to active successfully ", user1.getName());
     }
-
     public ResponseEntity<APIResponse> getUserDetailsAndPostsCount() {
 
         List<UserWithPostCountResponse> userWithPostCountResponses = userProfileRepository.getUsersWithPostCount();
@@ -106,10 +100,11 @@ public class UserProfileService {
         }
         return APIResponse.success("response :", userWithPostCountResponses);
     }
+
     public ResponseEntity<APIResponse> getAllUsersWithPosts() {
         List<UserProfile> userProfiles = userProfileRepository.findAll();
         if (userProfiles.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("users are not found").getBody());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("Users are not found")).getBody();
         }
         List<UserPostResponse> userPostResponses = new ArrayList<>();
         for (UserProfile userProfile : userProfiles) {
@@ -117,23 +112,15 @@ public class UserProfileService {
             String name = userProfile.getName();
             String email = userProfile.getEmail();
             List<Post> posts = postRepository.findByUserId(id);
-
-            List<PostResponse> postResponseList = new ArrayList<>();
-            for (Post post : posts) {
-                if (post == null) {
-                    postResponseList.add(null);
-                } else {
-                    PostResponse postDTO = new PostResponse(post.getId(), post.getPostText(),id);
-                    postResponseList.add(postDTO);
-                }
-            }
-            UserPostResponse userPostResponse = new UserPostResponse(id, name, email, postResponseList);
-            userPostResponses.add(userPostResponse);
+            List<PostResponse> postResponseList = posts.stream()
+                    .map(post -> post == null ? null : new PostResponse(post.getId(), post.getPostText(), id))
+                    .collect(Collectors.toList());
+            userPostResponses.add(new UserPostResponse(id, name, email, postResponseList));
         }
         if (userPostResponses.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("posts are not found")).getBody();
         }
-        return APIResponse.success("responses are:", userPostResponses);
+        return APIResponse.success("Responses are:", userPostResponses);
     }
 
 }

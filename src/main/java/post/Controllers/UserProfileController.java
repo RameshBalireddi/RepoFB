@@ -41,14 +41,11 @@ public class UserProfileController {
         return userProfileService.deleteUserById(userId);
     }
 
-
     @GetMapping("/postCount")
     public ResponseEntity<APIResponse> getUserDetailsAndPostsCount(){
 
       return  userProfileService.getUserDetailsAndPostsCount();
     }
-
-
     @GetMapping("/posts")
     public  ResponseEntity<APIResponse> getPosts(){
         return  userProfileService.getAllUsersWithPosts();

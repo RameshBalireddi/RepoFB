@@ -33,7 +33,6 @@ public class FriendServiceTest{
     @Mock
     private UserProfileRepository userProfileRepository;
 
-
     @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
@@ -63,8 +62,8 @@ public class FriendServiceTest{
         assertNotNull(responseEntity.getBody());
         assertEquals(expectedFriendResponses, actualFriendResponses);
 
-
-
     }
+
+
 
 }

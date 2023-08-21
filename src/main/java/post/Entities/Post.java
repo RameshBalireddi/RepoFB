@@ -1,4 +1,5 @@
 package post.Entities;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,7 +20,7 @@ public class Post {
      private int id;
 
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "userId",referencedColumnName = "id")
     private UserProfile user;
 

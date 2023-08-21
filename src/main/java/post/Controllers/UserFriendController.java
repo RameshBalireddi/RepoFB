@@ -24,9 +24,9 @@ public class UserFriendController {
                  return userFriendService.sentFriendRequest(senderId,requestId);
              }
     @GetMapping("/pendingRequests")
-    public ResponseEntity<APIResponse> getPendingRequests() {
+    public ResponseEntity<APIResponse> getPendingRequests(@RequestParam(required = false,defaultValue = "false")boolean all) {
         int receiverId=GetUser.getUserId();
-       return  userFriendService.getPendingRequests(receiverId);
+       return  userFriendService.getPendingRequests(receiverId,all);
 
     }
     @PutMapping("/friendRequest/{requestId}")

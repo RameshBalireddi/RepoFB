@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import post.Entities.UserFriend;
+import post.Enum.FriendshipStatus;
 import post.Responses.FriendResponse;
 
 import java.util.List;
@@ -42,5 +43,7 @@ public interface UserFriendRepository extends JpaRepository<UserFriend,Integer> 
             "WHERE friend_id <> :userId", nativeQuery = true)
     List<Integer> findFriendIds(@Param("userId") int userId);
 
+    @Query(value = "SELECT * FROM friendship WHERE status = :friendshipStatus",nativeQuery = true)
+    List<UserFriend> findByStatus(@Param("friendshipStatus") String friendshipStatus);
 
 }
