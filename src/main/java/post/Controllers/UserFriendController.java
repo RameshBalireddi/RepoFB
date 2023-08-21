@@ -5,7 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import post.APIResponse.APIResponse;
 import post.Repositories.UserFriendRepository;
-import post.Security.UserIdContextHolder;
+import post.Security.GetUser;
 import post.Service.UserFriendService;
 
 @RestController
@@ -19,13 +19,13 @@ public class UserFriendController {
     @PostMapping("/sentFriendRequest/{requestId}")
     public ResponseEntity<APIResponse> sentFriendRequest(@PathVariable int requestId) {
 
-                int senderId=UserIdContextHolder.getUserId();
+                int senderId=GetUser.getUserId();
 
                  return userFriendService.sentFriendRequest(senderId,requestId);
              }
     @GetMapping("/pendingRequests")
     public ResponseEntity<APIResponse> getPendingRequests() {
-        int receiverId=UserIdContextHolder.getUserId();
+        int receiverId=GetUser.getUserId();
        return  userFriendService.getPendingRequests(receiverId);
 
     }
@@ -33,22 +33,15 @@ public class UserFriendController {
     public ResponseEntity<APIResponse> handleFriendRequest(
                                                  @PathVariable int requestId,
                                                  @RequestParam(required = false,defaultValue = "accept") String action) {
-        int receiverId=UserIdContextHolder.getUserId();
+        int receiverId=GetUser.getUserId();
         return userFriendService.handleFriendRequest(receiverId, requestId, action);
 
     }
 
     @GetMapping("/friendsList")
-    public APIResponse getFriends() {
-         int userId= UserIdContextHolder.getUserId();
+    public ResponseEntity<APIResponse> getFriends() {
+         int userId= GetUser.getUserId();
             return  userFriendService.getFriendsByUserId(userId);
     }
-
-
-
-
-
-
-
 
 }

@@ -15,4 +15,6 @@ public class UserResponse {
  private String email;
 
  private String profilePicPath;
+
+ private String profilePicCloudUrl;
 }

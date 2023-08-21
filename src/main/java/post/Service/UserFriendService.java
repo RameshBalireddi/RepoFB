@@ -26,17 +26,16 @@ public class UserFriendService {
     private UserFriendRepository userFriendRepository;
     @Autowired
     private UserProfileRepository userProfileRepository;
-    @Autowired
-    private UserFriendService userFriendService;
-    public ResponseEntity<APIResponse> sentFriendRequest(int senderId,int requestId) {
+
+    public ResponseEntity<APIResponse> sentFriendRequest(int senderId, int requestId) {
 
         if (senderId == requestId) {
-            return APIResponse.error("Sender and receiver cannot be the same.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(APIResponse.error("sender And receiver cant be the same").getBody());
         }
         UserProfile senderProfile = userProfileRepository.findById(senderId).orElse(null);
         UserProfile receiverProfile = userProfileRepository.findById(requestId).orElse(null);
         if (senderProfile == null || receiverProfile == null) {
-            return APIResponse.error("Invalid sender or receiver ID.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("invalid sender Id")).getBody();
         }
         UserFriend existingFriendship = userFriendRepository.findBySenderIdAndReceiverId(senderId, requestId);
 
@@ -51,14 +50,14 @@ public class UserFriendService {
         }
 
         if (existingFriendship.getStatus() == FriendshipStatus.ACCEPTED) {
-            return APIResponse.error("You both are already friends.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(APIResponse.error("You both are already friends")).getBody();
         } else if (existingFriendship.getStatus() == FriendshipStatus.REJECTED) {
             existingFriendship.setStatus(FriendshipStatus.PENDING);
             existingFriendship.setRequest_date(LocalDateTime.now());
             userFriendRepository.save(existingFriendship);
-            return APIResponse.error("Your friend request was sent again successfully");
+            return APIResponse.success("Your friend request was sent again successfully",requestId);
         }
-        return APIResponse.error("Friend request was already sent.");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(APIResponse.error("friend request was already sent")).getBody();
     }
 
 
@@ -68,10 +67,11 @@ public class UserFriendService {
                 receiverId, pending);
         List<FriendRequestDTO> friendRequestsList=  new LinkedList<>();
         if (pendingRequests.isEmpty()) {
-            return APIResponse.error("You don't have any pending friend requests.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("you have any pending requests")).getBody();
         }
         for( UserFriend friend:pendingRequests){
             Optional<UserProfile> sender=userProfileRepository.findById(friend.getSender().getId());
+
             FriendRequestDTO friendRequestDTO=new FriendRequestDTO();
             friendRequestDTO.setSenderId( friend.getSender().getId());
             friendRequestDTO.setStatus(String.valueOf(friend.getStatus()));
@@ -83,15 +83,15 @@ public class UserFriendService {
 
     public ResponseEntity<APIResponse> handleFriendRequest(int receiverId, int requestId, String requestAction) {
         if (receiverId == requestId) {
-            return APIResponse.error("Receiver and sender cannot be the same.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(APIResponse.error("sender and receiver cant be the same")).getBody();
         }
         UserFriend requestStatus = userFriendRepository.findBySenderIdAndReceiverId(requestId, receiverId);
         if (requestStatus.getStatus()==FriendshipStatus.ACCEPTED) {
-            return APIResponse.error("You both are already friends.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(APIResponse.error("you both are already friends")).getBody();
         }
         UserFriend userFriend = userFriendRepository.findByReceiverIdAndRequestIdAndStatus(receiverId, requestId, String.valueOf(FriendshipStatus.PENDING));
         if (userFriend == null) {
-            return APIResponse.error("You haven't received any request from the given user.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(APIResponse.error("You haven't received any request from the given user")).getBody();
         }
            if (requestAction.equalsIgnoreCase("accept")) {
             userFriend.setStatus(FriendshipStatus.ACCEPTED);
@@ -102,22 +102,19 @@ public class UserFriendService {
         if (requestAction.equalsIgnoreCase("reject")) {
             userFriend.setStatus(FriendshipStatus.REJECTED);
             userFriendRepository.save(userFriend);
-            return APIResponse.error("Friend request rejected successfully.");
+            return APIResponse.success("Friend request rejected successfully.",requestId);
         }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(APIResponse.error("You haven't received any request from the given user")).getBody();
 
-                return APIResponse.error("You haven't received any request from the given user.");
     }
 
-
-
-
-    public APIResponse getFriendsByUserId(int userId) {
+    public ResponseEntity<APIResponse> getFriendsByUserId(int userId) {
         List<Integer> friendsIds = userFriendRepository.findFriendIds(userId);
         if(friendsIds.isEmpty())
-        return APIResponse.error("this user have no friends").getBody();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("this user have no friends")).getBody();
         List<UserProfile> userProfiles=    userProfileRepository.findAllById(friendsIds);
        if (userProfiles.isEmpty()){
-           return APIResponse.error("user profiles are empty ").getBody();
+           return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("user profiles are empty ")).getBody();
        }
         List<FriendResponse> friendResponses = userProfiles.stream()
                 .map(userProfile -> new FriendResponse(
@@ -128,7 +125,7 @@ public class UserFriendService {
                 ))
                 .collect(Collectors.toList());
 
-        return APIResponse.success("friends ",friendResponses).getBody();
+        return ResponseEntity.ok(APIResponse.success("friends ",friendResponses)).getBody();
 
     }
 

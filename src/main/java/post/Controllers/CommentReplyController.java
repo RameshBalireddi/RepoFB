@@ -27,14 +27,21 @@ public class CommentReplyController {
     }
 
     @GetMapping("/replies")
-    public  APIResponse getAllCommentReplies(@RequestParam(required = false,defaultValue = "0") int commentId){
+    public  ResponseEntity<APIResponse> getAllCommentReplies(@RequestParam(required = false,defaultValue = "0") int commentId){
               return  replyService.getALlCommentReplies(commentId);
     }
 
    @DeleteMapping("/{replyId}")
-        public APIResponse deleteReplyById( @PathVariable int replyId){
+        public ResponseEntity<APIResponse> deleteReplyById(@PathVariable int replyId){
              return  replyService.deleteReplyById(replyId);
        }
+
+       @PutMapping("/editCommentReply/{replyId}")
+       public ResponseEntity<APIResponse> editReplyByReplyId(@PathVariable int replyId, @RequestBody String commentReply){
+        return  replyService.editReplyByReplyId(replyId,commentReply);
+       }
+
+
    }
 
 

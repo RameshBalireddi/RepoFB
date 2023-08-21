@@ -22,10 +22,10 @@ public class SecurityConfig {
     @Autowired
     private UserDetailsService userDetailsService;
 
-    @Autowired
-    public OncePerRequestFilter customUserIdFilter() {
-        return new CustomUserIdFilter();
-    }
+//    @Autowired
+//    public OncePerRequestFilter customUserIdFilter() {
+//        return new CustomUserIdFilter();
+//    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -46,7 +46,7 @@ public class SecurityConfig {
 //                .requestMatchers("/post/**","comment/**","user/**","/sentFriendRequest/**").authenticated()
 ////                .anyRequest().permitAll()
                 .and()
-                .addFilterBefore(customUserIdFilter(), UsernamePasswordAuthenticationFilter.class)
+//                .addFilterBefore(customUserIdFilter(), UsernamePasswordAuthenticationFilter.class)
                 .httpBasic();
         return http.build();
     }

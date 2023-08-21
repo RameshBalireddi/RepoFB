@@ -2,15 +2,13 @@ package post.Controllers;
 
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import post.APIResponse.APIResponse;
 import post.DTO.UserDTO;
 import post.Repositories.UserProfileRepository;
-import post.Security.UserIdContextHolder;
+import post.Security.GetUser;
 import post.Service.UserProfileService;
-import java.util.List;
 
 @RestController
 @RequestMapping("user")
@@ -32,19 +30,28 @@ public class UserProfileController {
     }
 
     @PutMapping("status")
-    public APIResponse updateUserStatus(){
-        int userId= UserIdContextHolder.getUserId();
+    public ResponseEntity<APIResponse> updateUserStatus(){
+        int userId= GetUser.getUserId();
         return userProfileService.updateStatusById(userId);
 
     }
     @DeleteMapping("")
-    public APIResponse deleteUser(){
-        int userId= UserIdContextHolder.getUserId();
+    public ResponseEntity<APIResponse> deleteUser(){
+        int userId= GetUser.getUserId();
         return userProfileService.deleteUserById(userId);
     }
 
 
+    @GetMapping("/postCount")
+    public ResponseEntity<APIResponse> getUserDetailsAndPostsCount(){
+
+      return  userProfileService.getUserDetailsAndPostsCount();
+    }
 
 
+    @GetMapping("/posts")
+    public  ResponseEntity<APIResponse> getPosts(){
+        return  userProfileService.getAllUsersWithPosts();
+    }
 
 }

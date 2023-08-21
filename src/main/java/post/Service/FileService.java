@@ -3,11 +3,16 @@ package post.Service;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import post.APIResponse.APIResponse;
 import post.Entities.UserProfile;
 import post.Repositories.UserProfileRepository;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -26,10 +31,13 @@ public class FileService {
     @Autowired
     Cloudinary cloudinary;
 
-    public APIResponse uploadImage(String path, MultipartFile file, int userId) {
+    public ResponseEntity<APIResponse>  uploadImage(String path, MultipartFile file, int userId) {
         try {
             Optional<UserProfile> userOptional = userProfileRepository.findById(userId);
-            if (userOptional.isPresent()) {
+            if(userOptional.isEmpty()){
+                return APIResponse.error("user not found");
+            }
+
                 UserProfile userProfile = userOptional.get();
                 String name = file.getOriginalFilename();
                 String filePath = path + File.separator + UUID.randomUUID() + "_" + name;
@@ -42,39 +50,51 @@ public class FileService {
                 userProfile.setProfilePicPath(filePath);
                 userProfileRepository.save(userProfile);
                 Files.copy(file.getInputStream(), Paths.get(filePath));
-                return APIResponse.success("Profile pic uploaded successfully", filePath).getBody();
-            }
-            return APIResponse.error("User not found").getBody();
+                return APIResponse.success("Profile pic uploaded successfully", filePath);
+
+
         } catch (IOException e) {
-            return APIResponse.error("Failed to upload profile pic").getBody();
+            return  ResponseEntity.status(HttpStatus.BAD_REQUEST).body(APIResponse.error("failed to upload profile pic")).getBody();
         }
     }
 
-    public APIResponse getProfilePicture(int userId) {
+    public ResponseEntity  getProfilePicture(int userId) {
         try {
-            Optional<UserProfile> userOptional = userProfileRepository.findById(userId);
-            if (userOptional.isPresent()) {
-                UserProfile userProfile = userOptional.get();
-                String profilePicPath = userProfile.getProfilePicPath();
-                byte[] fileBytes = Files.readAllBytes(Paths.get(profilePicPath));
-                return APIResponse.success("Profile picture retrieved successfully", fileBytes).getBody();
+            Optional<UserProfile> userProfile = userProfileRepository.findById(userId);
+            if (userProfile.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("user not found");
             }
-            return APIResponse.error("User not found").getBody();
-        } catch (IOException e) {
-            return APIResponse.error("Failed to retrieve profile pic").getBody();
+            String profilePicPath = userProfile.get().getProfilePicPath();
+            if (profilePicPath == null || profilePicPath.isBlank())
+                return APIResponse.error("user don't have profile pic");
+            try {
+                byte[] imageContent = Files.readAllBytes(Paths.get(profilePicPath));
+                ByteArrayResource resource = new ByteArrayResource(imageContent);
+                return ResponseEntity.ok()
+                        .header("Content-Disposition", "attachment; filename=profile_picture.jpg")
+                        .header("Content-Type", MediaType.IMAGE_PNG_VALUE)
+                        .body(resource.getByteArray());
+            } catch (IOException e) {
+                e.printStackTrace();
+                throw e;
+            }
+
+        } catch (Exception e) {
+            System.out.printf(e.getMessage());
+            return ResponseEntity.notFound().build();
         }
     }
 
 
 
-    public APIResponse uploadImageInCloud(MultipartFile file, int userId) throws IOException {
+    public ResponseEntity<APIResponse> uploadImageInCloud(MultipartFile file, int userId) throws IOException {
         if (file == null || file.isEmpty()) {
-            return APIResponse.error("File not found.").getBody();
+            return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("file not found")).getBody();
         }
 
         Optional<UserProfile> userProfileOptional = userProfileRepository.findById(userId);
         if (!userProfileOptional.isPresent()) {
-            return APIResponse.error("User not found.").getBody();
+            return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("user not found")).getBody();
         }
         UserProfile user = userProfileOptional.get();
         Map<String, Object> uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.emptyMap());
@@ -82,17 +102,20 @@ public class FileService {
         user.setProfileURL(profileURL);
         userProfileRepository.save(user);
 
-        return APIResponse.uploadSuccess("File uploaded successfully.").getBody();
+        return APIResponse.uploadSuccess("File uploaded successfully.");
     }
 
-    public APIResponse getPictureInCloud(int userId) {
+    public ResponseEntity<APIResponse>  getPictureInCloud(int userId) {
 
         Optional<UserProfile> userProfile=userProfileRepository.findById(userId);
         if(userProfile.isEmpty()){
-            return APIResponse.error(" user not Found").getBody();
+            return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("user not found")).getBody();
             }
-       String  url=   userProfile.get().getProfileURL();
-        return APIResponse.success("url :",url).getBody();
+         String  url=  userProfile.get().getProfileURL();
+        if( url==null  || url.isBlank()){
+            return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("URL not found  this user have no url")).getBody();
+        }
+        return APIResponse.success("url :",url);
 
     }
 

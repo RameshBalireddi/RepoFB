@@ -1,11 +1,10 @@
 package post.Controllers;
 
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import post.APIResponse.APIResponse;
-import post.Security.UserIdContextHolder;
+import post.Security.GetUser;
 import post.Service.PostService;
 
 @RestController
@@ -19,24 +18,24 @@ public class PostController{
     @PostMapping("/add")
     public ResponseEntity<APIResponse> addPost( @RequestBody String postText) {
         if(postText==null) return  APIResponse.error("please add post text");
-        int userId=UserIdContextHolder.getUserId();
+        int userId=GetUser.getUserId();
        return   postService.addPost(postText,userId);
     }
 
     @GetMapping("/list")
-    public APIResponse getAllPosts() {
-        int userId=UserIdContextHolder.getUserId();
-        return (APIResponse) postService.getAllPosts(userId);
+    public ResponseEntity<APIResponse>  getAllPosts(@RequestParam(required = false,defaultValue = "false") boolean friends,@RequestParam(required = false,defaultValue = "false") boolean own) {
+        int userId= GetUser.getUserId();
+        return  postService.getAllPosts(userId,friends,own);
     }
 
     @PutMapping("update/{postId}")
-        public ResponseEntity<APIResponse> changePostByPostId(@PathVariable int postId,@RequestBody String postText){
+        public ResponseEntity<APIResponse>  changePostByPostId(@PathVariable int postId, @RequestBody String postText){
        return  postService.updatePost(postId,postText);
     }
 
    @DeleteMapping("/{postId}")
-    public APIResponse postDelete(@PathVariable int postId){
-        int userId= UserIdContextHolder.getUserId();
+    public ResponseEntity<APIResponse>  postDelete(@PathVariable int postId){
+        int userId= GetUser.getUserId();
      return    postService.deletePostById(postId,userId);
 
    }

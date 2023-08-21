@@ -1,6 +1,7 @@
 package post.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import post.APIResponse.APIResponse;
@@ -15,7 +16,7 @@ import post.Repositories.CommentRepository;
 import post.Repositories.UserFriendRepository;
 import post.Repositories.UserProfileRepository;
 import post.Responses.CommentReplyResponse;
-import post.Security.UserIdContextHolder;
+import post.Security.GetUser;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -35,17 +36,17 @@ public class CommentReplyService {
 
     public ResponseEntity<APIResponse> writeReplyForComment(CommentReplyDTO reply) {
         int commentId = reply.getCommentId();
-        int replyUserId = UserIdContextHolder.getUserId();
+        int replyUserId = GetUser.getUserId();
 
         Optional<Comment> optionalComment = commentRepository.findById(commentId);
         Optional<UserProfile> optionalUserProfile = userProfileRepository.findById(replyUserId);
 
         if (optionalComment.isEmpty()) {
-            return APIResponse.error("Comment not found.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("Comment not found.").getBody());
         }
 
         if (optionalUserProfile.isEmpty()) {
-            return APIResponse.error("User not found.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("User not found.").getBody());
         }
 
         Comment comment = optionalComment.get();
@@ -54,7 +55,7 @@ public class CommentReplyService {
         UserFriend friendStatus = userFriendRepository.findByReceiverIdAndRequestIdAndStatus(
                 comment.getUser().getId(), replyUserId, String.valueOf(FriendshipStatus.ACCEPTED));
         if (friendStatus == null) {
-            return APIResponse.error("You are not allowed to reply to this comment.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(APIResponse.error("you are not allow to delete this  comment reply ")).getBody();
         }
 
         CommentReply commentReply = new CommentReply();
@@ -64,16 +65,16 @@ public class CommentReplyService {
         commentReply.setReplyAt(LocalDateTime.now());
         commentReplyRepository.save(commentReply);
 
-        return APIResponse.success("Reply added successfully.", reply);
+        return ResponseEntity.status(HttpStatus.CREATED).body(APIResponse.success("Reply added successfully.", reply)).getBody();
     }
 
-    public APIResponse getALlCommentReplies(Integer commentId) {
+    public ResponseEntity<APIResponse> getALlCommentReplies(Integer commentId) {
         List<CommentReply> commentReplies = (commentId == 0)
                 ? commentReplyRepository.findAll()
                 : commentReplyRepository.findByCommentId(commentId);
 
         if (commentReplies.isEmpty()) {
-            return APIResponse.error((commentId == 0) ? "Replies are not found." : "This comment has no replies.").getBody();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error((commentId == 0) ? "Replies are not found." : "This comment has no replies.")).getBody();
         }
 
         List<CommentReplyResponse> commentReplyResponseList = commentReplies.stream()
@@ -85,24 +86,41 @@ public class CommentReplyService {
                         commentReply.getReplyAt()))
                 .collect(Collectors.toList());
 
-        return APIResponse.success("commentReplies:", commentReplyResponseList).getBody();
+        return APIResponse.success("commentReplies:", commentReplyResponseList);
     }
 
 
-    public APIResponse deleteReplyById(int replyId) {
+    public ResponseEntity<APIResponse> deleteReplyById(int replyId) {
 
          Optional<CommentReply> commentReply=  commentReplyRepository.findById(replyId);
          if(commentReply.isEmpty()){
-             return APIResponse.error("comment reply are not found").getBody();}
-         int userId=UserIdContextHolder.getUserId();
+             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("comment reply are not found")).getBody();}
+         int userId=GetUser.getUserId();
           Optional<UserProfile> userProfile= userProfileRepository.findById(userId);
          if(userProfile.isEmpty()){
-             return APIResponse.error("user not found").getBody();}
+             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("user not found")).getBody();}
          if(commentReply.get().getId()!=userId){
-             return APIResponse.error("you are not allow to delete this  comment reply ").getBody();
+             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(APIResponse.error("you are not allow to delete this  comment reply ")).getBody();
          }
          commentReplyRepository.deleteById(replyId);
-         return APIResponse.success("comment reply deleted successfully ",commentReply.get().getReply()).getBody();
+         return APIResponse.success("comment reply deleted successfully ",commentReply.get().getReply());
+    }
+
+    public ResponseEntity<APIResponse> editReplyByReplyId(int replyId,String replyText) {
+        if(replyText==null){
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(APIResponse.error("add some text to reply  ")).getBody();
+        }
+     CommentReply commentReply=   commentReplyRepository.findById(replyId).orElse(null);
+      if(commentReply==null){
+          return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("comment reply not found")).getBody();
+      }
+      if( commentReply.getUser().getId()!= GetUser.getUserId()){
+          return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(APIResponse.error(" you are not allow to edit this comment")).getBody();
+      }
+       commentReply.setReply(replyText);
+      commentReplyRepository.save(commentReply);
+      return ResponseEntity.status(HttpStatus.CREATED).body(APIResponse.success("reply updated successfully ",replyText)).getBody();
+
     }
 }
 

@@ -1,16 +1,21 @@
 package post.Service;
 
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import post.APIResponse.APIResponse;
 import post.DTO.UserDTO;
+import post.Entities.Post;
 import post.Entities.UserProfile;
+import post.Repositories.PostRepository;
 import post.Repositories.UserProfileRepository;
+import post.Responses.PostResponse;
+import post.Responses.UserPostResponse;
 import post.Responses.UserResponse;
-
+import post.Responses.UserWithPostCountResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -21,10 +26,13 @@ public class UserProfileService {
     @Autowired
     UserProfileRepository userProfileRepository;
 
-   @Autowired
+    @Autowired
+    PostRepository postRepository;
+
+    @Autowired
     PasswordEncoder passwordEncoder;
 
-    public ResponseEntity<APIResponse> addUser(UserDTO userDTO) {
+    public ResponseEntity<APIResponse> addUser(@Valid UserDTO userDTO) {
         try {
             UserProfile userProfile = new UserProfile();
             userProfile.setName(userDTO.getName());
@@ -32,66 +40,102 @@ public class UserProfileService {
             String password = passwordEncoder.encode(userDTO.getPassword());
             userProfile.setPassword(password);
             userProfileRepository.save(userProfile);
-            return APIResponse.success("User added successfully", userDTO);
+            return ResponseEntity.status(HttpStatus.CREATED).body(APIResponse.success("User added successfully", userDTO).getBody());
         } catch (Exception e) {
-            return APIResponse.error("Failed to add user Please enter valid details.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(APIResponse.error("Failed to add user Please enter valid details.").getBody());
         }
     }
 
-
-
     public ResponseEntity<APIResponse> getAllUsers() {
         List<UserProfile> users = userProfileRepository.findByActive(true);
-         if(users.isEmpty()){
-             return  APIResponse.error("users not found");
-         }
-         List < UserResponse> userResponses=new ArrayList<>();
-        for (UserProfile user:users){
-            int id=user.getId();
-            String name=user.getName();
-            String email= user.getEmail();;
-            String profilePicPath=user.getProfilePicPath();
-            UserResponse userResponse=new UserResponse(id,name,email,profilePicPath);
-         userResponses.add(userResponse);
+        if (users.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("users not found").getBody());
+        }
+        List<UserResponse> userResponses = new ArrayList<>();
+        for (UserProfile user : users) {
+            int id = user.getId();
+            String name = user.getName();
+            String email = user.getEmail();
+            String profilePicCloudUrl= user.getProfileURL();
+            String profilePicPath = user.getProfilePicPath();
+            UserResponse userResponse = new UserResponse(id, name, email, profilePicPath,profilePicCloudUrl);
+            userResponses.add(userResponse);
         }
 
         return APIResponse.success("users are : ", userResponses);
     }
 
-    public APIResponse deleteUserById(int userId) {
+    public ResponseEntity<APIResponse> deleteUserById(int userId) {
         Optional<UserProfile> userOptional = Optional.ofNullable(userProfileRepository.findByIdAndActive(userId, true));
-      if( userOptional.isEmpty()){
-          return APIResponse.error("user not found").getBody();
-      }
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("user not found")).getBody();
+        }
 
         if (userOptional.isPresent()) {
             UserProfile user = userOptional.get();
             user.setActive(false);
             userProfileRepository.save(user);
-           return APIResponse.success("User deleted successfully", user.getName()).getBody();
+            return APIResponse.success("User deleted successfully", user.getName());
         } else {
-            return APIResponse.error("User not found").getBody();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("user not found")).getBody();
         }
     }
 
 
-    public APIResponse updateStatusById(int userId) {
-        Optional<UserProfile> user=  userProfileRepository.findById(userId);
-        if (user.isEmpty()){
-            return APIResponse.error("user not found").getBody();
+    public ResponseEntity<APIResponse> updateStatusById(int userId) {
+        Optional<UserProfile> user = userProfileRepository.findById(userId);
+        if (user.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("user not found")).getBody();
         }
-        UserProfile user1=user.get();
-        if( user1.isActive()==true){
-         user1.setActive(false);
-         userProfileRepository.save(user1);
-         return APIResponse.success("user status changed to inactive successfully ",user1.getName()).getBody();
+        UserProfile user1 = user.get();
+        if (user1.isActive() == true) {
+            user1.setActive(false);
+            userProfileRepository.save(user1);
+            return APIResponse.success("user status changed to inactive successfully ", user1.getName());
         }
-         user1.setActive(true);
-         userProfileRepository.save(user1);
-         return APIResponse.success("user status changed to active successfully ",user1.getName()).getBody();
+        user1.setActive(true);
+        userProfileRepository.save(user1);
+        return APIResponse.success("user status changed to active successfully ", user1.getName());
     }
 
+    public ResponseEntity<APIResponse> getUserDetailsAndPostsCount() {
 
+        List<UserWithPostCountResponse> userWithPostCountResponses = userProfileRepository.getUsersWithPostCount();
+        if (userWithPostCountResponses.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("user profiles are not found")).getBody();
+        }
+        return APIResponse.success("response :", userWithPostCountResponses);
+    }
+    public ResponseEntity<APIResponse> getAllUsersWithPosts() {
+        List<UserProfile> userProfiles = userProfileRepository.findAll();
+        if (userProfiles.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("users are not found").getBody());
+        }
+        List<UserPostResponse> userPostResponses = new ArrayList<>();
+        for (UserProfile userProfile : userProfiles) {
+            int id = userProfile.getId();
+            String name = userProfile.getName();
+            String email = userProfile.getEmail();
+            List<Post> posts = postRepository.findByUserId(id);
 
+            List<PostResponse> postResponseList = new ArrayList<>();
+            for (Post post : posts) {
+                if (post == null) {
+                    postResponseList.add(null);
+                } else {
+                    PostResponse postDTO = new PostResponse(post.getId(), post.getPostText(),id);
+                    postResponseList.add(postDTO);
+                }
+            }
+            UserPostResponse userPostResponse = new UserPostResponse(id, name, email, postResponseList);
+            userPostResponses.add(userPostResponse);
+        }
+        if (userPostResponses.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("posts are not found")).getBody();
+        }
+        return APIResponse.success("responses are:", userPostResponses);
+    }
 
 }
+
+

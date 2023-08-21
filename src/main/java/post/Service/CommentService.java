@@ -1,6 +1,7 @@
 package post.Service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import post.APIResponse.APIResponse;
@@ -15,10 +16,9 @@ import post.Repositories.CommentRepository;
 import post.Repositories.PostRepository;
 import post.Repositories.UserFriendRepository;
 import post.Repositories.UserProfileRepository;
-import post.Security.UserIdContextHolder;
+import post.Security.GetUser;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -34,15 +34,16 @@ public class CommentService {
     @Autowired
     private UserProfileRepository userProfileRepository;
 
+
     public ResponseEntity<APIResponse> writeACommentForPost(CommentDTO commentDTO) {
         int postId = commentDTO.getPostId();
-        int userId = UserIdContextHolder.getUserId();
+        int userId = GetUser.getUserId();
 
         Optional<Post> optionalPost = postRepository.findById(postId);
         Optional<UserProfile> optionalUser = userProfileRepository.findById(userId);
 
         if (!optionalPost.isPresent() || !optionalUser.isPresent()) {
-            return APIResponse.error("Post or user not found.");
+            return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("posts are not found")).getBody();
         }
 
         Post post = optionalPost.get();
@@ -51,7 +52,7 @@ public class CommentService {
 
         Optional<UserFriend> friend = Optional.ofNullable(userFriendRepository.findBySenderIdAndReceiverId(postOwnerId, userId));
         if (userId != postOwnerId && (friend.isEmpty() || friend.get().getStatus() != FriendshipStatus.ACCEPTED)) {
-            return APIResponse.error("You can't comment on this post.");
+            return  ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(APIResponse.error("you cant comment on this post")).getBody();
         }
 
         Comment comment = new Comment();
@@ -62,7 +63,7 @@ public class CommentService {
         Comment savedComment = commentRepository.save(comment);
 
         String successMessage = (userId == postOwnerId) ? "You commented on your own post." : "Comment added successfully.";
-        return APIResponse.success(successMessage, savedComment);
+        return ResponseEntity.status(HttpStatus.CREATED).body(APIResponse.success(successMessage,comment)).getBody();
     }
 
 
@@ -89,31 +90,30 @@ public class CommentService {
     public ResponseEntity<APIResponse> deleteCommentById(int commentId, int userId) {
         Optional<Comment> optionalComment = commentRepository.findById(commentId);
         if (optionalComment.isEmpty()) {
-            return APIResponse.error("Comment not found.");
+            return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("comments are not found")).getBody();
         }
         Comment comment = optionalComment.get();
         int commentUserId = comment.getUser().getId();
 
         if (userId != commentUserId) {
-            return APIResponse.error("You are not eligible to delete this comment.");
+            return  ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(APIResponse.error("you are not eligible to delete this comment")).getBody();
         }
         commentRepository.deleteById(commentId);
         return APIResponse.success("Comment deleted successfully", commentId);
     }
 
-
-    public APIResponse updateCommentById(int commentId, int userId,String commentText) {
+    public ResponseEntity<APIResponse> updateCommentById(int commentId, int userId,String commentText) {
       Optional<Comment> comment=  commentRepository.findById(commentId);
 
       if(comment.isEmpty()){
-          return APIResponse.error("comment not found").getBody();
+          return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("comments are not found")).getBody();
       }
       Comment comment1=   comment.get();
       if(comment1.getUser().getId()!=userId) {
-          return APIResponse.error("this user cant authorise to delete this comment").getBody();
+          return  ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(APIResponse.error("this user not allow to update this comment")).getBody();
       }
         comment1.setComment(commentText);
         commentRepository.save(comment1);
-       return APIResponse.success("comment updated successfully ",commentText).getBody();
+       return APIResponse.success("comment updated successfully ",commentText);
     }
 }

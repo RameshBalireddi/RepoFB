@@ -32,6 +32,4 @@ public class Post {
     @Column(name="createdAt")
     private LocalDateTime createAt;
 
-
-
 }

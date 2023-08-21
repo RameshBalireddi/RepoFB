@@ -10,8 +10,14 @@ import lombok.NoArgsConstructor;
 public class PostResponse {
 
   private int postId;
-  private String post;
+  private String postText;
   private int userId;
+
+  public  PostResponse(int postId,String postText){
+
+    this.postId=postId;
+    this.postText=postText;
+  }
 
 }
 
