@@ -73,11 +73,8 @@ public class UserFriendService {
     }
 
     private void createFriendRequestNotification(UserProfile receiverProfile, int senderId) {
-        Notification notification = new Notification();
-        notification.setUser(receiverProfile);
-        notification.setNotification("You have received a friend request from user ID: " + senderId);
-        notification.setNotificationReceivedAt(LocalDateTime.now());
-        notificationRepo.save(notification);
+        Notification notification = new Notification(receiverProfile,"you have received a friend request from this user ID: " + senderId,LocalDateTime.now());
+         notificationRepo.save(notification);
     }
 
     public ResponseEntity<APIResponse> getPendingRequests(int receiverId, boolean all) {
@@ -128,10 +125,7 @@ public class UserFriendService {
         }
         if(requestAction.equalsIgnoreCase("accept")){
            UserProfile senderProfile=  userProfileRepository.findById(requestId).orElse(null);
-            Notification notification = new Notification();
-            notification.setUser(senderProfile);
-            notification.setNotification("Your friend request accepted from user ID: " + receiverId);
-            notification.setNotificationReceivedAt(LocalDateTime.now());
+            Notification notification = new Notification(senderProfile,"Your friend request accepted  from user ID: " + receiverId,LocalDateTime.now());
             notificationRepo.save(notification);
         }
         userFriendRepository.save(userFriend);

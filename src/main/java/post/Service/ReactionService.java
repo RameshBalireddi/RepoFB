@@ -7,15 +7,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import post.APIResponse.APIResponse;
 
-import post.Entities.Reaction;
-import post.Entities.Post;
-import post.Entities.UserFriend;
-import post.Entities.UserProfile;
+import post.Entities.*;
 import post.Enum.FriendshipStatus;
-import post.Repositories.ReactionRepository;
-import post.Repositories.PostRepository;
-import post.Repositories.UserFriendRepository;
-import post.Repositories.UserProfileRepository;
+import post.Repositories.*;
 import post.Responses.ReactionResponse;
 import post.Security.GetUser;
 
@@ -36,6 +30,9 @@ public class ReactionService {
     @Autowired
     UserProfileRepository userProfileRepository;
 
+    @Autowired
+    NotificationRepo notificationRepo;
+
     public ResponseEntity<APIResponse> reactPost(int reactUserId, int postId, boolean reactionStatus) {
         UserProfile userProfile = userProfileRepository.findById(reactUserId).orElse(null);
         if(userProfile.isActive()==false || userProfile==null)
@@ -49,6 +46,7 @@ public class ReactionService {
         if (post == null ) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("Posts are not found")).getBody();
         }
+        UserProfile postUser=post.getUser();
         int postUserId = post.getUser().getId();
         if (postUserId != reactUserId) {
             UserFriend friendStatus = userFriendRepository.findBySenderIdAndReceiverId(postUserId, reactUserId);
@@ -57,12 +55,11 @@ public class ReactionService {
 
             }
         }
-        Reaction reaction = new Reaction();
-        reaction.setUser(userProfile);
-        reaction.setPost(post);
-        reaction.setLiked(reactionStatus);
-        reaction.setLikedAt(LocalDateTime.now());
+        Reaction reaction = new Reaction(userProfile,post,reactionStatus,LocalDateTime.now());
         reactionRepository.save(reaction);
+        Notification notification=new Notification(postUser,userProfile.getName()+ "  liked your post",LocalDateTime.now());
+        notificationRepo.save(notification);
+
         String successMessage = (postUserId == reactUserId) ? "You liked your own post." : "Post liked successfully.";
         return APIResponse.success(successMessage, reaction);
     }
@@ -110,7 +107,7 @@ public class ReactionService {
         return APIResponse.success("reactions",reactionResponses);
     }
 
-}
+    }
 
 
 

@@ -40,5 +40,11 @@ public class Reaction {
     private LocalDateTime likedAt;
 
 
+    public Reaction(UserProfile userProfile, Post post, boolean reactionStatus, LocalDateTime now) {
+        this.user=userProfile;
+        this.post=post;
+        this.liked=reactionStatus;
+        this.likedAt=now;
+    }
 }
 

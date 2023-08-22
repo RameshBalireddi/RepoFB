@@ -2,6 +2,8 @@ package post.Responses;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import post.Entities.Notification;
+import post.Entities.UserProfile;
 
 import java.time.LocalDateTime;
 @Data
@@ -15,4 +17,7 @@ public class NotificationResponse {
     private String notification;
 
     private LocalDateTime notificationReceivedAt;
+
+
+
 }

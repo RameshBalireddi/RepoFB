@@ -20,7 +20,7 @@ public class UserFriend {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "user_id_sender")
     private UserProfile sender;
 
