@@ -1,4 +1,4 @@
-package post.DTO;
+package post.Responses;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class FriendRequestDTO {
+public class PendingRequest {
 
     @NotNull
     private int senderId;
@@ -16,6 +16,8 @@ public class FriendRequestDTO {
     private String status;
 
     private String senderName;
+
+    private int receiverId;
 
 
 }

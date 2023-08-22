@@ -21,7 +21,7 @@ public class UserFriendController {
 
                 int senderId=GetUser.getUserId();
 
-                 return userFriendService.sentFriendRequest(senderId,requestId);
+                 return userFriendService.sendFriendRequest(senderId,requestId);
              }
     @GetMapping("/pendingRequests")
     public ResponseEntity<APIResponse> getPendingRequests(@RequestParam(required = false,defaultValue = "false")boolean all) {

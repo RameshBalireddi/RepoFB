@@ -16,11 +16,13 @@ import post.Repositories.ReactionRepository;
 import post.Repositories.PostRepository;
 import post.Repositories.UserFriendRepository;
 import post.Repositories.UserProfileRepository;
+import post.Responses.ReactionResponse;
 import post.Security.GetUser;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ReactionService {
@@ -55,24 +57,22 @@ public class ReactionService {
 
             }
         }
-
         Reaction reaction = new Reaction();
         reaction.setUser(userProfile);
         reaction.setPost(post);
         reaction.setLiked(reactionStatus);
         reaction.setLikedAt(LocalDateTime.now());
         reactionRepository.save(reaction);
-
         String successMessage = (postUserId == reactUserId) ? "You liked your own post." : "Post liked successfully.";
         return APIResponse.success(successMessage, reaction);
     }
 
 
     public ResponseEntity<APIResponse> changeReactionForPost(int postId,int userId) {
-        Optional<Reaction> reaction = Optional.ofNullable(reactionRepository.findByUserIdAndPostId(postId, userId));
+        Optional<Reaction> reaction = Optional.ofNullable(reactionRepository.findByUserIdAndPostId(userId, postId));
 
         if(reaction.isEmpty()){
-             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(APIResponse.error("You are not react this post")).getBody();
+             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("reaction not found")).getBody();
         }
             Reaction reaction1 = reaction.get();
             Boolean status=reaction1.isLiked();
@@ -92,16 +92,24 @@ public class ReactionService {
         if(reactions.isEmpty()){
             return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("reactions are not found")).getBody();
         }
-        return APIResponse.success("reactions",reactions);
+        List<ReactionResponse> reactionResponses=reactions.stream()
+                .map(r->new ReactionResponse(r.getUser().getId(),r.getPost().getId(),r.getId(),r.isLiked())).collect(Collectors.toList());
+
+        return APIResponse.success("reactions",reactionResponses);
     }
+
     public ResponseEntity<APIResponse> getAllReactionsById() {
 
-     Optional<Reaction> reactions= reactionRepository.findAllById(GetUser.getUserId());
-     if(reactions.isEmpty()){
-         return  ResponseEntity.status(HttpStatus.BAD_REQUEST).body(APIResponse.error("reactions are not found from given user")).getBody();
-     }
-     return APIResponse.success("reactions",reactions);
+        List<Reaction> reactions= (List<Reaction>) reactionRepository.findByUserId(GetUser.getUserId());
+        if(reactions.isEmpty()){
+            return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("reactions are not found")).getBody();
+        }
+        List<ReactionResponse> reactionResponses=reactions.stream()
+                .map(r->new ReactionResponse(r.getUser().getId(),r.getPost().getId(),r.getId(),r.isLiked())).collect(Collectors.toList());
+
+        return APIResponse.success("reactions",reactionResponses);
     }
+
 }
 
 

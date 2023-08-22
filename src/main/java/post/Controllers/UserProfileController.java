@@ -29,7 +29,7 @@ public class UserProfileController {
     return userProfileService.getAllUsers();
     }
 
-    @PutMapping("status")
+    @PutMapping("/status")
     public ResponseEntity<APIResponse> updateUserStatus(){
         int userId= GetUser.getUserId();
         return userProfileService.updateStatusById(userId);

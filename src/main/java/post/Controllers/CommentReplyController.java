@@ -31,7 +31,7 @@ public class CommentReplyController {
               return  replyService.getALlCommentReplies(commentId);
     }
 
-   @DeleteMapping("/{replyId}")
+      @DeleteMapping("/{replyId}")
         public ResponseEntity<APIResponse> deleteReplyById(@PathVariable int replyId){
              return  replyService.deleteReplyById(replyId);
        }
@@ -40,6 +40,8 @@ public class CommentReplyController {
        public ResponseEntity<APIResponse> editReplyByReplyId(@PathVariable int replyId, @RequestBody String commentReply){
         return  replyService.editReplyByReplyId(replyId,commentReply);
        }
+
+
 
 
    }

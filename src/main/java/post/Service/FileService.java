@@ -3,10 +3,12 @@ package post.Service;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import post.APIResponse.APIResponse;
@@ -23,6 +25,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@Component
 public class FileService {
 
     @Autowired
@@ -30,6 +33,8 @@ public class FileService {
 
     @Autowired
     Cloudinary cloudinary;
+
+
 
     public ResponseEntity<APIResponse>  uploadImage(String path, MultipartFile file, int userId) {
         try {
@@ -119,6 +124,14 @@ public class FileService {
 
     }
 
+    @Bean
+    public Cloudinary cloudinary() {
+        return new Cloudinary(ObjectUtils.asMap(
+                "cloud_name", "dnwhtwtmb",
+                "api_key", "466345793428852",
+                "api_secret", "hMMtUgqm39OqjEBJKPC7AJXnErc"
+        ));
+    }
 
 }
 

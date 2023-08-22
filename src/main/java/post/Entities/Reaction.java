@@ -22,12 +22,12 @@ public class Reaction {
     private int id;
 
     @ManyToOne
-    @JsonIgnore
+//    @JsonIgnore
     @JoinColumn(name="userId")
     private UserProfile user;
 
     @ManyToOne
-    @JsonIgnore
+//    @JsonIgnore
     @JoinColumn(name = "postId",referencedColumnName = "id")
     private Post post;
 

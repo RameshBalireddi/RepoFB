@@ -17,4 +17,5 @@ public class UserResponse {
  private String profilePicPath;
 
  private String profilePicCloudUrl;
+
 }

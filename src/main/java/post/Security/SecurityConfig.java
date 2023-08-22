@@ -22,11 +22,6 @@ public class SecurityConfig {
     @Autowired
     private UserDetailsService userDetailsService;
 
-//    @Autowired
-//    public OncePerRequestFilter customUserIdFilter() {
-//        return new CustomUserIdFilter();
-//    }
-
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -40,13 +35,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf().disable()
-
                 .authorizeRequests()
                 .anyRequest().authenticated()
-//                .requestMatchers("/post/**","comment/**","user/**","/sentFriendRequest/**").authenticated()
-////                .anyRequest().permitAll()
                 .and()
-//                .addFilterBefore(customUserIdFilter(), UsernamePasswordAuthenticationFilter.class)
                 .httpBasic();
         return http.build();
     }
