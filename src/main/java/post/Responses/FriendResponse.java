@@ -8,15 +8,15 @@ import post.Entities.UserProfile;
 @Data
 public class FriendResponse {
 
-    private int id;
-    private String name;
+    private int userId;
+    private String userName;
     private String email;
     private String profilePicPath;
 
 
     public FriendResponse(int id, String name, String email, String profilePicPath) {
-        this.id = id;
-        this.name = name;
+        this.userId = id;
+        this.userName = name;
         this.email = email;
         this.profilePicPath = profilePicPath;
     }

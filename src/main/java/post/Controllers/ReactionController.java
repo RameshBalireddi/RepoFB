@@ -5,46 +5,46 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import post.APIResponse.APIResponse;
-import post.Security.GetUser;
+import post.Security.ObjectUtil;
 import post.Service.ReactionService;
 
 @RestController
+
 public class ReactionController {
 
   @Autowired
     ReactionService reactionService;
 
-
   @PostMapping("/reaction/{postId}")
   public ResponseEntity<APIResponse> likePost(@PathVariable int postId, @RequestParam(required = false,defaultValue = "true")  boolean reaction) {
-         int reactUserId=GetUser.getUserId();
+         int reactUserId= ObjectUtil.getUserId();
          try {
              return reactionService.reactPost(reactUserId, postId, reaction);
          }catch (Exception e) {
-             return ResponseEntity.status(HttpStatus.NO_CONTENT).body(APIResponse.error( e.getMessage())).getBody();
+             return APIResponse.errorNotFound( e.getMessage());
          }
   }
 
-  @PutMapping("/{postId}")
+  @PutMapping("reaction/update/{postId}")
   public ResponseEntity<APIResponse> changeReactionByUser(@PathVariable int postId){
-      int userId= GetUser.getUserId();
+      int userId= ObjectUtil.getUserId();
       return reactionService.changeReactionForPost(postId,userId);
   }
 
-  @GetMapping("/reactionsList")
+  @GetMapping("/reaction/list/all")
     public  ResponseEntity<APIResponse> getAllReactions(){
       try{
       return  reactionService.getAllReactions();
   }catch (Exception e) {
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(APIResponse.error( e.getMessage())).getBody();
+        return APIResponse.errorNotFound( e.getMessage());
     }
   }
-  @GetMapping("reactions")
+  @GetMapping("reaction/list")
   public  ResponseEntity<APIResponse> getAllReactionsById(){
       try{
           return  reactionService.getAllReactionsById();
       }catch (Exception e) {
-          return ResponseEntity.status(HttpStatus.NO_CONTENT).body(APIResponse.error( e.getMessage())).getBody();
+          return APIResponse.errorNotFound( e.getMessage());
       }
   }
 

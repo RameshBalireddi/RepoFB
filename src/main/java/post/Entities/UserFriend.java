@@ -37,4 +37,6 @@ public class UserFriend {
     @Column(name ="acceptance_date")
     private LocalDateTime acceptance_date;
 
+
+
 }

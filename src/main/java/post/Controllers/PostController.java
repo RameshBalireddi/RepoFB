@@ -1,10 +1,12 @@
 package post.Controllers;
 
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import post.APIResponse.APIResponse;
-import post.Security.GetUser;
+import post.DTO.PostRequest;
+import post.Security.ObjectUtil;
 import post.Service.PostService;
 
 @RestController
@@ -16,16 +18,24 @@ public class PostController{
     PostService postService;
 
     @PostMapping("/add")
-    public ResponseEntity<APIResponse> addPost( @RequestBody String postText) {
-        if(postText==null) return  APIResponse.error("please add post text");
-        int userId=GetUser.getUserId();
-       return   postService.addPost(postText,userId);
+    public ResponseEntity<APIResponse> addPost( @RequestBody @Valid PostRequest postRequest) {
+        int userId= ObjectUtil.getUserId();
+       return   postService.addPost(postRequest,userId);
     }
 
+    @GetMapping("/list/all")
+    public ResponseEntity<APIResponse>  getAllPosts() {
+
+        return  postService.getAllUserPosts();
+    }
+
+    @GetMapping("/following")
+    public ResponseEntity<APIResponse>  getFriendsPosts() {
+                return  postService.getFollowingPosts();
+    }
     @GetMapping("/list")
-    public ResponseEntity<APIResponse>  getAllPosts(@RequestParam(required = false,defaultValue = "false") boolean friends,@RequestParam(required = false,defaultValue = "false") boolean own) {
-        int userId= GetUser.getUserId();
-        return  postService.getAllPosts(userId,friends,own);
+    public ResponseEntity<APIResponse>  getOwnPosts() {
+                return  postService.getOwnPosts();
     }
 
     @PutMapping("update/{postId}")
@@ -35,7 +45,7 @@ public class PostController{
 
    @DeleteMapping("/{postId}")
     public ResponseEntity<APIResponse>  postDelete(@PathVariable int postId){
-        int userId= GetUser.getUserId();
+        int userId= ObjectUtil.getUserId();
      return    postService.deletePostById(postId,userId);
 
    }

@@ -14,4 +14,6 @@ public interface CommentReplyRepository extends JpaRepository<CommentReply,Integ
 
     @Query(value = "select * from replies where comment_id = :commentId", nativeQuery = true)
     List<CommentReply> findByCommentId(@Param("commentId") int commentId);
+
+
 }

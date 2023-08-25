@@ -23,7 +23,7 @@ public class CommentReply {
     private Comment comment;
 
     @ManyToOne
-    @JoinColumn(name = "replyId")
+    @JoinColumn(name = "reply_user_id")
     private UserProfile user;
 
     @NotNull

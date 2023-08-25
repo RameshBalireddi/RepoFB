@@ -20,12 +20,36 @@ public class APIResponse {
     }
 
 
-    public static ResponseEntity<APIResponse> error(String message){
+    public static ResponseEntity<APIResponse> errorBadRequest(String message){
         APIResponse apiResponse=new APIResponse();
         apiResponse.setSuccess(false);
         apiResponse.setMessage(message);
         apiResponse.setData(null);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiResponse);
+    }
+
+    public static ResponseEntity<APIResponse> successCreate(String message,Object data){
+        APIResponse apiResponse=new APIResponse();
+        apiResponse.setSuccess(false);
+        apiResponse.setMessage(message);
+        apiResponse.setData(data);
+        return ResponseEntity.status(HttpStatus.CREATED).body(apiResponse);
+    }
+
+    public static ResponseEntity<APIResponse> errorUnauthorised(String message){
+        APIResponse apiResponse=new APIResponse();
+        apiResponse.setSuccess(false);
+        apiResponse.setMessage(message);
+        apiResponse.setData(null);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(apiResponse);
+    }
+
+    public static ResponseEntity<APIResponse> errorNotFound(String message){
+        APIResponse apiResponse=new APIResponse();
+        apiResponse.setSuccess(false);
+        apiResponse.setMessage(message);
+        apiResponse.setData(null);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(apiResponse);
     }
 
     public static ResponseEntity<APIResponse> uploadSuccess(String message){

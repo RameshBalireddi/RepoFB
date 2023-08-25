@@ -6,38 +6,40 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import post.APIResponse.APIResponse;
 import post.DTO.CommentDTO;
-import post.Security.GetUser;
+import post.DTO.CommentRequest;
+import post.Security.ObjectUtil;
 import post.Service.CommentService;
 
 @RestController
-@RequestMapping("comment")
+//@RequestMapping("comment")
 public class CommentController {
     @Autowired
     CommentService commentService;
 
-    @PostMapping("add")
+    @PostMapping("comment/add")
     public ResponseEntity<APIResponse> writeACommentForPost(@RequestBody @Valid CommentDTO commentDTO) {
         return     commentService.writeACommentForPost(commentDTO);
 
     }
-    @GetMapping("list")
-    public ResponseEntity<APIResponse> getComments( @RequestParam(required = false,defaultValue = "0") int postId){
+    @GetMapping("comments/{postId}")
+    public ResponseEntity<APIResponse> getCommentsOnPost(@PathVariable int postId){
                      return commentService.getCommentsByPostId(postId);
     }
+    @GetMapping("/comments/list")
+    public ResponseEntity<APIResponse> getAllComments(){
+        return commentService.getAllComments();
+    }
 
-    @DeleteMapping("/{commentId}")
+    @DeleteMapping("/comment/{commentId}")
     public ResponseEntity<APIResponse> deleteComment(@PathVariable int commentId) {
-        int userId= GetUser.getUserId();
+        int userId= ObjectUtil.getUserId();
         return commentService.deleteCommentById(commentId, userId);
     }
 
-    @PutMapping("update/{commentId}")
-    public ResponseEntity<APIResponse> updateComment(@PathVariable int commentId, @RequestBody String commentText){
-        int userId=GetUser.getUserId();
-       return commentService.updateCommentById(commentId,userId,commentText);
+    @PutMapping("comment/update/{commentId}")
+    public ResponseEntity<APIResponse> updateComment(@PathVariable int commentId, @RequestBody @Valid  CommentRequest commentRequest){
+        int userId= ObjectUtil.getUserId();
+       return commentService.updateCommentById(commentRequest);
     }
-
-
-
 
 }

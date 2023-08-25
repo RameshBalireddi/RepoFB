@@ -6,17 +6,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import post.APIResponse.APIResponse;
 import post.DTO.CommentReplyDTO;
-import post.Entities.Comment;
-import post.Entities.CommentReply;
-import post.Entities.UserFriend;
-import post.Entities.UserProfile;
+import post.DTO.CommentReplyRequest;
+import post.Entities.*;
 import post.Enum.FriendshipStatus;
 import post.Repositories.CommentReplyRepository;
 import post.Repositories.CommentRepository;
-import post.Repositories.UserFriendRepository;
+import post.Repositories.FollowersRepository;
 import post.Repositories.UserProfileRepository;
 import post.Responses.CommentReplyResponse;
-import post.Security.GetUser;
+import post.Security.ObjectUtil;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -24,9 +22,11 @@ import java.util.stream.Collectors;
 
 @Service
 public class CommentReplyService {
-    @Autowired
-    UserFriendRepository userFriendRepository;
+//    @Autowired
+//    UserFriendRepository userFriendRepository;
 
+    @Autowired
+    FollowersRepository followersRepository;
     @Autowired
     UserProfileRepository userProfileRepository;
      @Autowired
@@ -36,28 +36,24 @@ public class CommentReplyService {
 
     public ResponseEntity<APIResponse> writeReplyForComment(CommentReplyDTO reply) {
         int commentId = reply.getCommentId();
-        int replyUserId = GetUser.getUserId();
+        int replyUserId = ObjectUtil.getUserId();
 
-        Optional<Comment> optionalComment = commentRepository.findById(commentId);
-        Optional<UserProfile> optionalUserProfile = userProfileRepository.findById(replyUserId);
+        Comment comment = commentRepository.findById(commentId).orElse(null);
+        UserProfile user = userProfileRepository.findById(replyUserId).orElse(null);
 
-        if (optionalComment.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("Comment not found.").getBody());
+        if (comment==null) {
+            return APIResponse.errorBadRequest("Comment not found please enter valid comment id.");
         }
 
-        if (optionalUserProfile.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("User not found.").getBody());
+        if (user==null) {
+            return APIResponse.errorNotFound("User not found.");
         }
 
-        Comment comment = optionalComment.get();
-        UserProfile user = optionalUserProfile.get();
-
-        UserFriend friendStatus = userFriendRepository.findByReceiverIdAndRequestIdAndStatus(
-                comment.getUser().getId(), replyUserId, String.valueOf(FriendshipStatus.ACCEPTED));
-        if (friendStatus == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(APIResponse.error("you are not allow to delete this  comment reply ")).getBody();
+        Followers friendStatus =  followersRepository.findByUserAndFollower(
+                comment.getUser().getId(), replyUserId);
+        if ( comment.getUser().getId()!=replyUserId && friendStatus == null  || friendStatus.getRequestStatus()!=FriendshipStatus.ACCEPTED) {
+            return APIResponse.errorUnauthorised("you are not allow  this  comment reply ");
         }
-
         CommentReply commentReply = new CommentReply();
         commentReply.setUser(user);
         commentReply.setComment(comment);
@@ -65,7 +61,7 @@ public class CommentReplyService {
         commentReply.setReplyAt(LocalDateTime.now());
         commentReplyRepository.save(commentReply);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(APIResponse.success("Reply added successfully.", reply)).getBody();
+        return APIResponse.successCreate("Reply added successfully.", reply);
     }
 
     public ResponseEntity<APIResponse> getALlCommentReplies(Integer commentId) {
@@ -74,9 +70,8 @@ public class CommentReplyService {
                 : commentReplyRepository.findByCommentId(commentId);
 
         if (commentReplies.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error((commentId == 0) ? "Replies are not found." : "This comment has no replies.")).getBody();
+            return APIResponse.errorNotFound((commentId == 0) ? "Replies are not found." : "This comment has no replies.");
         }
-
         List<CommentReplyResponse> commentReplyResponseList = commentReplies.stream()
                 .map(commentReply -> new CommentReplyResponse(
                         commentReply.getComment().getId(),
@@ -92,34 +87,32 @@ public class CommentReplyService {
 
     public ResponseEntity<APIResponse> deleteReplyById(int replyId) {
 
-         Optional<CommentReply> commentReply=  commentReplyRepository.findById(replyId);
-         if(commentReply.isEmpty()){
-             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("comment reply are not found")).getBody();}
-         int userId=GetUser.getUserId();
-          Optional<UserProfile> userProfile= userProfileRepository.findById(userId);
-         if(userProfile.isEmpty()){
-             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("user not found")).getBody();}
-         if(commentReply.get().getId()!=userId){
-             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(APIResponse.error("you are not allow to delete this  comment reply ")).getBody();
+         CommentReply commentReply=  commentReplyRepository.findById(replyId).orElse(null);
+         if(commentReply==null){
+             return APIResponse.errorNotFound("comment reply are not found");}
+         int userId= ObjectUtil.getUserId();
+          UserProfile userProfile= userProfileRepository.findById(userId).orElse(null);
+         if(userProfile==null){
+             return APIResponse.errorNotFound("user not found");}
+         if(commentReply.getUser().getId()!=userId){
+             return APIResponse.errorUnauthorised("you are not allow to delete this  comment reply ");
          }
          commentReplyRepository.deleteById(replyId);
-         return APIResponse.success("comment reply deleted successfully ",commentReply.get().getReply());
+         return APIResponse.success("comment reply deleted successfully ",commentReply.getReply());
     }
 
-    public ResponseEntity<APIResponse> editReplyByReplyId(int replyId,String replyText) {
-        if(replyText==null){
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(APIResponse.error("add some text to reply  ")).getBody();
-        }
-     CommentReply commentReply=   commentReplyRepository.findById(replyId).orElse(null);
+    public ResponseEntity<APIResponse> editReplyByReplyId(CommentReplyRequest commentReplyRequest) {
+
+     CommentReply commentReply=   commentReplyRepository.findById(commentReplyRequest.getCommentReplyId()).orElse(null);
       if(commentReply==null){
-          return ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("comment reply not found")).getBody();
+          return APIResponse.errorBadRequest(" comment reply not found enter valid reply Id");
       }
-      if( commentReply.getUser().getId()!= GetUser.getUserId()){
-          return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(APIResponse.error(" you are not allow to edit this comment")).getBody();
+      if( commentReply.getUser().getId()!= ObjectUtil.getUserId()){
+          return APIResponse.errorUnauthorised(" you are not allow to edit this reply for  comment");
       }
-       commentReply.setReply(replyText);
+       commentReply.setReply(commentReplyRequest.getCommentReplyText());
       commentReplyRepository.save(commentReply);
-      return ResponseEntity.status(HttpStatus.CREATED).body(APIResponse.success("reply updated successfully ",replyText)).getBody();
+      return APIResponse.success("reply updated successfully ",commentReplyRequest);
 
     }
 }

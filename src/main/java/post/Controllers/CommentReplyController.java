@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import post.APIResponse.APIResponse;
 import post.DTO.CommentReplyDTO;
+import post.DTO.CommentReplyRequest;
 import post.Entities.CommentReply;
 import post.Entities.Reaction;
 import post.Service.CommentReplyService;
@@ -19,14 +20,14 @@ public class CommentReplyController {
     @Autowired
     CommentReplyService replyService;
 
-    @PostMapping("/reply")
+    @PostMapping("/comment/reply")
     public ResponseEntity<APIResponse> writeReplyForComment(@RequestBody @Valid CommentReplyDTO replyDTO) {
 
        return replyService.writeReplyForComment(replyDTO);
 
     }
 
-    @GetMapping("/replies")
+    @GetMapping("/comment/replies")
     public  ResponseEntity<APIResponse> getAllCommentReplies(@RequestParam(required = false,defaultValue = "0") int commentId){
               return  replyService.getALlCommentReplies(commentId);
     }
@@ -36,9 +37,9 @@ public class CommentReplyController {
              return  replyService.deleteReplyById(replyId);
        }
 
-       @PutMapping("/editCommentReply/{replyId}")
-       public ResponseEntity<APIResponse> editReplyByReplyId(@PathVariable int replyId, @RequestBody String commentReply){
-        return  replyService.editReplyByReplyId(replyId,commentReply);
+       @PutMapping("/comment/reply/update/{replyId}")
+       public ResponseEntity<APIResponse> editReplyByReplyId(@RequestBody @Valid CommentReplyRequest commentReplyRequest){
+        return  replyService.editReplyByReplyId(commentReplyRequest);
        }
 
 

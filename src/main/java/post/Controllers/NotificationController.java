@@ -19,4 +19,6 @@ public class NotificationController {
     public ResponseEntity<APIResponse> getAllNotifications(@RequestParam (required = false, defaultValue = "false") boolean all){
        return  notificationService.getAllNotifications(all);
     }
+
+
 }

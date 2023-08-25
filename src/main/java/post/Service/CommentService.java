@@ -6,17 +6,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import post.APIResponse.APIResponse;
 import post.DTO.CommentDTO;
+import post.DTO.CommentRequest;
+import post.Entities.*;
+import post.Repositories.*;
 import post.Responses.CommentResponse;
-import post.Entities.Comment;
-import post.Entities.Post;
-import post.Entities.UserFriend;
-import post.Entities.UserProfile;
 import post.Enum.FriendshipStatus;
-import post.Repositories.CommentRepository;
-import post.Repositories.PostRepository;
-import post.Repositories.UserFriendRepository;
-import post.Repositories.UserProfileRepository;
-import post.Security.GetUser;
+import post.Security.ObjectUtil;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,30 +24,30 @@ public class CommentService {
     private CommentRepository commentRepository;
     @Autowired
     private PostRepository postRepository;
+
     @Autowired
-    private UserFriendRepository userFriendRepository;
+    private FollowersRepository followersRepository;
     @Autowired
     private UserProfileRepository userProfileRepository;
 
 
     public ResponseEntity<APIResponse> writeACommentForPost(CommentDTO commentDTO) {
         int postId = commentDTO.getPostId();
-        int userId = GetUser.getUserId();
+        int userId = ObjectUtil.getUserId();
 
         Optional<Post> optionalPost = postRepository.findById(postId);
         Optional<UserProfile> optionalUser = userProfileRepository.findById(userId);
 
         if (!optionalPost.isPresent() || !optionalUser.isPresent()) {
-            return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("posts are not found")).getBody();
+            return  APIResponse.errorNotFound("posts are not found");
         }
 
         Post post = optionalPost.get();
         UserProfile user = optionalUser.get();
         int postOwnerId = post.getUser().getId();
-
-        Optional<UserFriend> friend = Optional.ofNullable(userFriendRepository.findBySenderIdAndReceiverId(postOwnerId, userId));
-        if (userId != postOwnerId && (friend.isEmpty() || friend.get().getStatus() != FriendshipStatus.ACCEPTED)) {
-            return  ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(APIResponse.error("you cant comment on this post")).getBody();
+        Optional<Followers> follower = Optional.ofNullable(followersRepository.findByUserAndFollower(postOwnerId, userId));
+        if (userId != postOwnerId && (follower.isEmpty() || follower.get().getRequestStatus() != FriendshipStatus.ACCEPTED)) {
+            return  APIResponse.errorUnauthorised("you are not allow to reply to this post because you are not follower of this user  ");
         }
 
         Comment comment = new Comment();
@@ -68,12 +63,41 @@ public class CommentService {
 
 
     public ResponseEntity<APIResponse> getCommentsByPostId(int postId) {
-        List<Comment> commentList = (postId == 0)
-                ? commentRepository.findAll()
-                : commentRepository.findByPostId(postId);
 
+        Post post=postRepository.findById(postId).orElse(null);
+        if(post==null){
+            return  APIResponse.errorBadRequest("please enter valid post id");
+        }
+        Followers followerStatus=followersRepository.findByUserAndFollower(post.getUser().getId(),ObjectUtil.getUserId());
+
+        if(followerStatus==null   || followerStatus.getRequestStatus()!=FriendshipStatus.ACCEPTED  ){
+            return  APIResponse.errorUnauthorised("you are not allow to read this post comments");
+        }
+        List<Comment> commentList =commentRepository.findByPostId(postId);
         if (commentList.isEmpty()) {
-            return APIResponse.error((postId == 0) ? "No comments found." : "This post has no comments.");
+            return APIResponse.errorNotFound( "no one  comment on this post");
+        }
+
+
+         if(followerStatus==null   || followerStatus.getRequestStatus()!=FriendshipStatus.ACCEPTED  ){
+             return  APIResponse.errorUnauthorised("you are not allow to read this post comments");
+         }
+
+        List<CommentResponse> commentsList = commentList.stream()
+                .map(comment -> new CommentResponse(
+                        comment.getId(),
+                        comment.getUser().getId(),
+                        comment.getPost().getId(),
+                        comment.getComment()))
+                .collect(Collectors.toList());
+        return APIResponse.success("comments:", commentsList);
+    }
+
+    public ResponseEntity<APIResponse> getAllComments() {
+
+        List<Comment> commentList =commentRepository.findAll();
+        if (commentList.isEmpty()) {
+            return APIResponse.errorNotFound( "no one can comment on any post");
         }
         List<CommentResponse> commentsList = commentList.stream()
                 .map(comment -> new CommentResponse(
@@ -82,38 +106,34 @@ public class CommentService {
                         comment.getPost().getId(),
                         comment.getComment()))
                 .collect(Collectors.toList());
-
         return APIResponse.success("comments:", commentsList);
     }
 
-
     public ResponseEntity<APIResponse> deleteCommentById(int commentId, int userId) {
-        Optional<Comment> optionalComment = commentRepository.findById(commentId);
-        if (optionalComment.isEmpty()) {
-            return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("comments are not found")).getBody();
+        Comment comment= commentRepository.findById(commentId).orElse(null);
+        if (comment==null) {
+            return  APIResponse.errorNotFound("please enter valid comment ID");
         }
-        Comment comment = optionalComment.get();
         int commentUserId = comment.getUser().getId();
-
         if (userId != commentUserId) {
-            return  ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(APIResponse.error("you are not eligible to delete this comment")).getBody();
+            return  APIResponse.errorUnauthorised("you are not eligible to delete this comment");
         }
         commentRepository.deleteById(commentId);
         return APIResponse.success("Comment deleted successfully", commentId);
     }
 
-    public ResponseEntity<APIResponse> updateCommentById(int commentId, int userId,String commentText) {
-      Optional<Comment> comment=  commentRepository.findById(commentId);
+    public ResponseEntity<APIResponse> updateCommentById(CommentRequest commentRequest) {
+      Comment comment=  commentRepository.findById(commentRequest.getCommentId()).orElse(null);
 
-      if(comment.isEmpty()){
-          return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(APIResponse.error("comments are not found")).getBody();
+      if(comment==null){
+          return  APIResponse.errorBadRequest("please enter valid comment Id");
       }
-      Comment comment1=   comment.get();
-      if(comment1.getUser().getId()!=userId) {
-          return  ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(APIResponse.error("this user not allow to update this comment")).getBody();
+
+      if(comment.getUser().getId()!=ObjectUtil.getUserId()) {
+          return  APIResponse.errorUnauthorised("you are not write this comment so you can't update");
       }
-        comment1.setComment(commentText);
-        commentRepository.save(comment1);
-       return APIResponse.success("comment updated successfully ",commentText);
+        comment.setComment(comment.getComment());
+        commentRepository.save(comment);
+       return APIResponse.success("comment updated successfully ",commentRequest);
     }
 }
